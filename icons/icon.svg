@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 180 180">
+  <!-- オイコシタイ！のアイコン（夜道のふたり）。PNG（180・192・512）はこの SVG から Playwright で書き出した -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0f2a"/><stop offset="1" stop-color="#2a2550"/></linearGradient>
+    <radialGradient id="lamp" cx="0.5" cy="0" r="1"><stop offset="0" stop-color="rgba(255,215,120,.6)"/><stop offset="1" stop-color="rgba(255,215,120,0)"/></radialGradient>
+  </defs>
+  <rect width="180" height="180" fill="url(#sky)"/>
+  <mask id="moon"><rect width="180" height="180" fill="#fff"/><circle cx="139" cy="29" r="14" fill="#000"/></mask><circle cx="146" cy="34" r="15" fill="#f3e3b0" mask="url(#moon)"/>
+  <rect x="26" y="26" width="5" height="124" fill="#5a5f86"/><rect x="26" y="26" width="24" height="5" fill="#5a5f86"/><circle cx="50" cy="35" r="6" fill="#ffd76a"/>
+  <path d="M50 38 L4 152 L104 152 Z" fill="url(#lamp)"/>
+  <rect x="0" y="148" width="180" height="32" fill="#1b1d38"/><rect x="0" y="148" width="180" height="3" fill="#3a3f6a"/>
+  <g transform="translate(90 148) scale(1.18) translate(-90 -148)">
+    <!-- 女性（前・右） -->
+    <circle cx="128" cy="88" r="10" fill="#e8c6a0"/><path d="M117 86 q11 -22 22 0 v16 h-22z" fill="#2a1a1a"/>
+    <path d="M116 100 h24 l4 32 h-32z" fill="#c56a7a"/><rect x="120" y="130" width="5" height="18" fill="#2a2440"/><rect x="131" y="130" width="5" height="18" fill="#2a2440"/>
+    <!-- 自分（うしろ・左） -->
+    <circle cx="74" cy="86" r="10" fill="#e8c6a0"/><path d="M64 83 q10 -15 20 0z" fill="#1a1a1a"/>
+    <path d="M62 98 h24 l2 34 h-28z" fill="#2c3554"/><rect x="64" y="130" width="6" height="18" fill="#1d2238"/><rect x="78" y="130" width="6" height="18" fill="#1d2238"/>
+    <!-- 汗 -->
+    <path d="M93 62 q5 8 0 11 q-5 -3 0 -11z" fill="#9fd0ff"/><path d="M100 70 q4 6 0 8.5 q-4 -2.5 0 -8.5z" fill="#9fd0ff"/>
+  </g>
+</svg>

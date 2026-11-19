@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>オイコシタイ！</title>
+<!-- ホーム画面に追加したときのアイコン（夜道のふたり） -->
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0f2a">
+<meta name="apple-mobile-web-app-title" content="オイコシタイ">
+<meta name="description" content="夜道で前を歩く人を、怖がらせずに追いこしたい。近すぎても、走ってもダメ。回りこんで抜け。エンディングは 19 種類。">
+<meta property="og:title" content="オイコシタイ！">
+<meta property="og:description" content="夜道で前を歩く人を、怖がらせずに追いこしたい">
+<meta property="og:url" content="https://robit-devworks.github.io/oikoshitai/">
+<meta property="og:image" content="https://robit-devworks.github.io/oikoshitai/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=%E3%82%AA%E3%82%A4%E3%82%B3%E3%82%B7%E3%82%BF%EF%BC%81SABCEXTRDGIN0123456789&display=swap">
+<script>
+  // 数える：GoatCounter（公開サイトだけ。開発者・テスターの端末は数えない）
+  (function () {
+    if (location.hostname !== 'robit-devworks.github.io') return;
+    try { if (localStorage.getItem('destroy-go-dev') === '1' || localStorage.getItem('destroy-go-tester') === '1' || /[?&]tester=1\b/.test(location.search)) { localStorage.setItem('skipgc', 't'); return; } } catch (e) {}
+    var s = document.createElement('script');
+    s.async = true; s.src = 'https://gc.zgo.at/count.js'; s.setAttribute('data-goatcounter', 'https://oikoshitai.goatcounter.com/count');
+    document.head.appendChild(s);
+  })();
+</script>
+<style>
+  :root {
+    --night: #0d1124; --panel: #161b33; --line: #2c3458; --ink: #eef0ff; --sub: #9aa3cc;
+    --lamp: #ffd76a; --safe: #4fd18b; --warn: #ffb547; --danger: #ff5a5a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; } /* 隠した部品は、どの見た目の決まりよりも優先して隠す */
+  html, body { margin: 0; height: 100%; background: var(--night); color: var(--ink); overflow: hidden;
+    font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+  #app { height: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column;
+    padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); gap: 8px; }
+  /* 上：警戒度 */
+  .hud { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; font-size: 13px; color: var(--sub); }
+  .bar { grid-column: 1 / -1; height: 14px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--safe); transition: background .3s; }
+  .hud b { color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
+  /* まん中：夜道 */
+  .stage { position: relative; flex: 1; min-height: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+  canvas { display: block; width: 100%; height: 100%; }
+  .over { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px;
+    padding: 18px; text-align: center; background: rgba(8, 10, 24, .78); overflow-y: auto; overflow-x: hidden; }
+  .over::before { content: ""; margin-top: auto; } .over::after { content: ""; margin-bottom: auto; } /* 入りきるときはまん中、入りきらないときはスクロール（隠れた部品に左右されない） */
+  .over[hidden] { display: none; }
+  /* ロゴ：前へ追いこす勢い（傾き・スピード線）＋ 街灯の黄色 ＋ 道路の白線。影なしの平面 */
+  .logo { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 400; }
+  .logo .sub { font-size: 12px; font-weight: 700; letter-spacing: .45em; color: var(--sub); padding-left: .45em; }
+  .logo .main { position: relative; left: .4em; display: inline-block; transform: skewX(-9deg); white-space: nowrap;
+    font-family: "Dela Gothic One", "Hiragino Sans", "Noto Sans JP", sans-serif; font-size: clamp(34px, 11vw, 54px); line-height: 1.05; letter-spacing: .01em;
+    color: #fff3d2; }
+  .logo .main b { font-weight: inherit; color: var(--lamp); }
+  .logo .main::before { content: ""; position: absolute; right: 100%; margin-right: .18em; top: 32%; width: .62em; height: .07em; border-radius: 9px;
+    background: rgba(255, 215, 106, .8); box-shadow: .16em .2em 0 rgba(255, 215, 106, .55), .3em .4em 0 rgba(255, 215, 106, .3); }
+  .logo .road { width: min(78%, 300px); height: 4px; margin-top: 6px; border-radius: 2px;
+    background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .55) 0 22px, transparent 22px 36px); }
+  .over p { margin: 0; line-height: 1.7; color: var(--sub); }
+  .over p b { color: var(--ink); }
+  .rules { text-align: left; font-size: 14px; background: rgba(22, 27, 51, .9); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+  .head { font-size: 28px; font-weight: 800; color: var(--ink); }
+  .ttl { font-size: 18px; font-weight: 700; color: var(--lamp); }
+  .skill { display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 12px; border: 2px solid var(--line); background: rgba(22, 27, 51, .9); text-align: left; }
+  .skill small { display: block; font-size: 11px; color: var(--sub); } .skill b { font-size: 16px; }
+  .sk-rank { font-family: "Dela Gothic One", "Hiragino Sans", sans-serif; font-size: 34px; line-height: 1; width: 1.2em; text-align: center; color: var(--sub); }
+  .skill.r-S { border-color: var(--lamp); box-shadow: 0 0 18px rgba(255, 215, 106, .35); } .skill.r-S .sk-rank { color: var(--lamp); }
+  .skill.r-A .sk-rank { color: var(--safe); } .skill.r-B .sk-rank { color: #9fd0ff; } .skill.r-C .sk-rank { color: var(--danger); }
+  /* 下：操作 */
+  /* 下：片手で押せる十字キー（右下）と、いまの速さ・列（左） */
+  .ctl { display: flex; align-items: center; gap: 12px; }
+  body.lefty .ctl { flex-direction: row-reverse; } /* 左手用：十字キーを左下に */
+  .pad-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .pad-info small { display: block; font-size: 11px; color: var(--sub); }
+  .dpad { --s: min(54px, 15vw); display: grid; grid-template-columns: repeat(3, var(--s)); grid-template-rows: repeat(3, var(--s)); gap: 4px; flex: none; }
+  .dp { appearance: none; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 18px; font-weight: 800; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; cursor: pointer; touch-action: manipulation; padding: 0; }
+  .dp small { font-size: 10px; font-weight: 700; color: var(--sub); margin-top: 3px; }
+  .dp:active { transform: translateY(2px); background: #232a4d; }
+  .dp.up { grid-area: 1 / 2; } .dp.left { grid-area: 2 / 1; } .dp.mid { grid-area: 2 / 2; border: 0; background: radial-gradient(circle, var(--line) 30%, transparent 32%); } .dp.right { grid-area: 2 / 3; } .dp.down { grid-area: 3 / 2; }
+  .lane .lanes { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; width: 60px; }
+  .lane .lanes i { height: 5px; border-radius: 3px; background: var(--line); }
+  .lane .lanes i.on { background: var(--lamp); }
+  .btn { appearance: none; border: 0; border-radius: 12px; padding: 12px 6px; font: inherit; font-size: 17px; font-weight: 700; color: var(--ink);
+    background: var(--panel); border: 2px solid var(--line); cursor: pointer; touch-action: manipulation; min-height: 64px; }
+  .btn:active { transform: translateY(2px); }
+  .btn.on { border-color: var(--lamp); color: var(--lamp); box-shadow: 0 0 12px rgba(255, 215, 106, .35) inset; }
+  .btn.main { background: var(--lamp); color: #2a1f00; border-color: var(--lamp); font-size: 19px; padding: 14px 28px; }
+  .btn.x { background: #000; border-color: #000; color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+  .btn:disabled { opacity: .45; }
+  .gear, .lane { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 6px 12px; }
+  .gear b { font-size: 18px; }
+  .gear .dots { display: flex; gap: 4px; margin-top: 4px; }
+  .gear .dots i { width: 14px; height: 6px; border-radius: 3px; background: var(--line); }
+  .gear .dots i.on { background: var(--lamp); }
+  .gear .dots i.on.run { background: var(--danger); }
+  .wide { grid-column: span 1; }
+  .keys { text-align: center; font-size: 11px; color: var(--sub); margin: 0; }
+  .rank { width: 100%; max-width: 340px; background: rgba(22, 27, 51, .9); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+  .rank-head { font-weight: 800; color: var(--lamp); font-size: 15px; }
+  .rank ol { list-style: none; margin: 6px 0 2px; padding: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .rank #r-rank-list { max-height: 120px; overflow-y: auto; position: relative; }
+  .rank-sum { font-size: 13px; color: var(--sub); margin-top: 6px; } .rank-sum b { color: var(--lamp); }
+  .near-head { font-size: 11px; color: var(--sub); margin-top: 4px; }
+  .rank li .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .rank li { display: grid; grid-template-columns: 3.2em 1fr 3.4em 3.2em; gap: 4px; padding: 2px 6px; border-radius: 6px; color: var(--sub); text-align: left; }
+  .rank li b { color: var(--ink); }
+  .rank li.me { background: rgba(255, 215, 106, .18); color: var(--ink); }
+  .rank-note { font-size: 11px; color: var(--sub); }
+  .tabs { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+  .tab { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sub); font: inherit; font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 999px; cursor: pointer; }
+  .tab.on { background: var(--lamp); border-color: var(--lamp); color: #2a1f00; }
+  .rank li.empty { display: block; text-align: center; padding: 6px; }
+  .author { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 12px; font-size: 12px; }
+  .author a { color: var(--sub); text-decoration: none; padding: 4px 2px; white-space: nowrap; }
+  .author a:hover { color: var(--ink); }
+  .link-btn { appearance: none; background: none; border: 0; color: var(--sub); font: inherit; font-size: 13px; text-decoration: underline; padding: 6px 10px; cursor: pointer; }
+  /* 隠し要素：タイトルがそわそわ → つつくと右へ逃げる */
+  .logo .main { transition: transform .12s; touch-action: manipulation; }
+  .logo .main.fidget { animation: fidget 2.6s infinite; cursor: pointer; }
+  @keyframes fidget { 0%, 84%, 100% { transform: translateX(0) skewX(-9deg); } 87% { transform: translateX(3px) skewX(-12deg); } 90% { transform: translateX(-1px) skewX(-8deg); } 93% { transform: translateX(2px) skewX(-11deg); } 96% { transform: translateX(0) skewX(-9deg); } }
+  .logo .main.from-left { animation: none; transition: none; transform: translateX(-110vw) skewX(-25deg) !important; }
+  .logo .main.back { animation: none; transition: transform .6s cubic-bezier(.2, .7, .3, 1); }
+  .logo .main.flee { animation: none; transition: transform .6s cubic-bezier(.5, 0, .9, .4); transform: translateX(110vw) skewX(-25deg) !important; }
+  .over p.hint { font-size: 12px; color: var(--sub); opacity: .8; }
+  .over p.uwasa { font-style: italic; color: #c9b8ff; }
+  .logo .sub.hard { color: var(--danger); letter-spacing: .1em; }
+  @media (prefers-reduced-motion: reduce) { .logo .main.fidget { animation-duration: 6s; } }
+  .res-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: 340px; }
+  .res-btns .x { grid-column: 1 / -1; }
+  .lane b { font-size: 16px; color: var(--ink); }
+  .stars { color: var(--lamp); font-size: 22px; letter-spacing: 2px; }
+  .new { display: inline-block; background: var(--danger); color: #fff; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 6px; margin-left: 6px; vertical-align: middle; }
+  .btn.small { min-height: 40px; padding: 8px 14px; font-size: 14px; }
+  @media (max-height: 640px) {
+    .over { gap: 8px; padding: 12px; } .over p { font-size: 13px; line-height: 1.55; }
+    .rules { font-size: 12px; line-height: 1.6; padding: 8px 12px; } .logo .sub { font-size: 11px; }
+    .keys { display: none; } .ctl { gap: 6px; } #app { gap: 6px; }
+  }
+  #o-title { padding-bottom: 22%; background: linear-gradient(rgba(8, 10, 24, .25), rgba(8, 10, 24, .62) 22%, rgba(8, 10, 24, .62) 72%, rgba(8, 10, 24, .3)); } /* 後ろのデモが見えるように薄く */ /* 下のボタンが消えたぶん、中身を少し上へ */
+  .name-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); }
+  .name-row input { width: 11em; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 16px; }
+  .over p.name-err { color: var(--danger); font-size: 12px; font-weight: 700; margin-top: -6px; }
+  .name-row input:focus { outline: none; border-color: var(--lamp); }
+  .menu-btn { position: absolute; top: 8px; right: 8px; z-index: 4; width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: rgba(14, 18, 40, .75); color: var(--ink); font-size: 20px; cursor: pointer; }
+  body.menu .menu-btn { display: none; }
+  .res-btns .span2 { grid-column: 1 / -1; }
+  .vol { display: grid; grid-template-columns: auto 1fr 3em; gap: 10px 10px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 14px; text-align: left; font-size: 13px; color: var(--sub); }
+  .vol input[type=range] { width: 100%; accent-color: var(--lamp); min-width: 0; }
+  .vol b { color: var(--ink); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+  #o-rank .rank #r-rank-list { max-height: min(52vh, 420px); }
+  #o-pause, #o-rank { z-index: 5; } #o-rank-body { width: 100%; display: flex; justify-content: center; }
+  .hud .coplab { grid-column: 1 / -1; font-size: 12px; } .hud .bar.cop { height: 8px; } .hud .bar.cop i { background: #5aa9ff; }
+  .hud [hidden] { display: none; }
+  .moon-btn { position: absolute; left: calc(82% - 28px); top: calc(12% - 28px); width: 56px; height: 56px; border-radius: 50%; border: 0; background: transparent; padding: 0; cursor: default; z-index: 1; }
+  /* ストーリー */
+  #o-story { background: rgba(5, 7, 18, .97); z-index: 5; }
+  .st-text .memo { background: #f4eedc; border-radius: 4px; padding: 10px 12px; transform: rotate(-1deg); box-shadow: 0 4px 14px rgba(0,0,0,.4); display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .st-text .memo p { font-size: 13px; line-height: 1.55; color: #3a3226; }
+  .st-day { font-family: "Hiragino Sans", sans-serif; font-size: 13px; letter-spacing: .3em; color: var(--lamp); }
+  .st-text { max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+  .st-text p { margin: 0; font-size: 16px; line-height: 1.8; color: var(--ink); opacity: 0; animation: stIn .8s ease forwards; }
+  @keyframes stIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .st-no { font-family: "Dela Gothic One", sans-serif; font-size: 15px; letter-spacing: .12em; color: var(--lamp); }
+  .st-no span { font-size: 11px; color: var(--sub); } .st-no i { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; font-weight: 700; font-style: normal; font-size: 10px; margin-left: 8px; padding: 1px 6px; border-radius: 6px; background: var(--danger); color: #fff; letter-spacing: .05em; vertical-align: 2px; }
+  .st-list { width: 100%; max-width: 340px; font-size: 12px; color: var(--sub); text-align: left; }
+  .st-list summary { cursor: pointer; text-align: center; padding: 4px; }
+  .st-list ol { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .st-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; color: var(--ink); }
+  .st-list li b { font-family: "Dela Gothic One", sans-serif; font-weight: 400; color: var(--lamp); }
+  .st-list li.no { color: var(--sub); } .st-list li small { width: 100%; padding-left: 28px; font-size: 11px; opacity: .8; }
+  .st-list li.now { color: #ffd76a; }
+  .st-title { font-size: 13px; color: #ffd76a; font-weight: 700; letter-spacing: .08em; }
+  .st-list.gold summary, .st-list.gold li b { color: #ffd76a; text-shadow: 0 0 8px rgba(255,215,106,.5); }
+  .st-route { font-size: 13px; color: #bfe9ff; letter-spacing: .1em; }
+  /* 隠し結末：虹色の EXTRA */
+  .st-extra { font-family: 'Dela Gothic One', sans-serif; font-size: 26px; letter-spacing: .18em; background: linear-gradient(90deg, #ff5e7e, #ffb84d, #fff36b, #6bff8f, #5ec8ff, #b07bff, #ff5e7e) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rainbow 2.5s linear infinite; filter: drop-shadow(0 0 6px rgba(255,255,255,.35)); }
+  @keyframes rainbow { to { background-position: 200% 0; } }
+  .st-res { display: flex; flex-direction: column; align-items: center; gap: 6px; } .st-res .head { font-size: 22px; }
+  .st-days { display: flex; gap: 10px; font-size: 13px; color: var(--sub); } .st-days span { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .st-days i { width: 18px; height: 18px; border-radius: 4px; }
+  .st-days em { font-style: normal; font-size: 11px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .st-legend { font-size: 11px; color: var(--sub); } .st-legend .g { color: var(--safe); } .st-legend .r { color: var(--danger); } .st-days .c0 { background: var(--safe); } .st-days .c1 { background: #e3d24f; } .st-days .c2 { background: var(--warn); } .st-days .c3 { background: var(--danger); }
+  .btn.x.st-share { width: 100%; max-width: 340px; }
+  .story-btn { border-color: #7fd3ff; color: #bfe9ff; }
+  @media (prefers-reduced-motion: reduce) { .st-text p { animation: none; opacity: 1; } }
+  body.menu .ctl, body.menu .keys { display: none; }
+  body.menu .hud { visibility: hidden; } /* タイトル・結果では警戒度を出さない */
+  @media (max-width: 345px) {
+    .btn { font-size: 14px; } .gear b { font-size: 15px; } .lane b { font-size: 14px; }
+    .rules { font-size: 11.5px; } .over p { font-size: 12.5px; }
+  }
+  @media (max-height: 700px) { .logo .main { font-size: min(40px, 10vw); } .rules { font-size: 13px; } .btn { min-height: 44px; padding: 8px 6px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hud">
+    <span>相手の警戒度 <b id="h-sus">0%</b> <b id="h-mood">平常</b></span><span><span id="h-home-l">前の人まで</span> <b id="h-home">—</b></span>
+    <div class="bar"><i id="h-bar"></i></div>
+    <span class="coplab" id="h-coplab" hidden>おまわりさんの目 <b id="h-cop">0%</b></span>
+    <div class="bar cop" id="h-copbar" hidden><i id="h-cbar"></i></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <button class="menu-btn" id="b-menu" aria-label="メニュー（一時停止）">☰</button>
+    <div class="over" id="o-pause" hidden>
+      <div class="head">一時停止</div>
+      <div class="res-btns">
+        <button class="btn main span2" id="b-resume">つづける</button>
+        <button class="btn" id="b-restart">やりなおす</button>
+        <button class="btn" id="b-ptitle">タイトルへ</button>
+        <button class="btn span2 hand-btn" id="b-hand2">十字キー：右手</button>
+        <div class="vol span2">
+          <label for="v-bgm">BGM（虫の声）</label><input type="range" id="v-bgm" min="0" max="100" step="10"><b id="v-bgm-n">100</b>
+          <label for="v-se">効果音</label><input type="range" id="v-se" min="0" max="100" step="10"><b id="v-se-n">100</b>
+        </div>
+      </div>
+    </div>
+    <div class="over" id="o-story" hidden>
+      <div class="st-day" id="st-day"></div>
+      <div class="st-text" id="st-text"></div>
+      <div class="st-res" id="st-res" hidden></div>
+      <a class="btn x st-share" id="st-share" href="https://x.com/" target="_blank" rel="noopener" hidden>𝕏 でストーリーの結末を共有</a>
+      <button class="btn main" id="st-next">歩きだす</button>
+      <button class="link-btn" id="st-quit">タイトルへ</button>
+    </div>
+    <div class="over" id="o-rank" hidden>
+      <div id="o-rank-body"></div>
+      <button class="btn small" id="b-rankback">もどる</button>
+    </div>
+    <div class="over" id="o-title">
+      <button class="moon-btn" id="b-moon" aria-label="月"></button>
+      <h1 class="logo" aria-label="オイコシタイ！"><span class="sub">夜道の気まずさゲーム</span><span class="main">オイコシ<b>タイ！</b></span><span class="road"></span></h1>
+      <p>夜道。前を歩く女性と、帰る方向が同じ。<br><b>怖がらせずに、追いこしたい。</b></p>
+      <div class="rules">
+        ・近づく／走る／ついて歩く → 警戒される<br>
+        ・▲▼で奥・手前へ。<b>回りこむと警戒されにくい</b><br>
+        ・止まっている車と電柱に気をつけて<br>
+        ・相手がスマホを見ているときはチャンス
+      </div>
+      <label class="name-row">プレイヤー名 <input id="pname" maxlength="10" placeholder="名無しの通行人" autocomplete="off" enterkeyhint="done"></label>
+      <p class="name-err" id="name-err" hidden>その名前は使えません。ちがう名前にしてね</p>
+      <button class="btn main" id="b-start">家に帰る</button>
+      <button class="btn small story-btn" id="b-story" hidden>ストーリー（月〜金の帰り道）</button>
+      <button class="btn small" id="b-rank">ランキング</button>
+      <p class="author" data-where="title"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://www.youtube.com/@futarigurashi_games/videos" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
+      <button class="link-btn hand-btn" id="b-hand1">十字キー：右手</button>
+      <p class="hint" id="hint" hidden>タイトルがそわそわしている…？</p>
+    </div>
+    <div class="over" id="o-result" hidden>
+      <div class="stars" id="r-stars"></div>
+      <div class="head"><span id="r-head"></span><span class="new" id="r-new" hidden>NEW</span></div>
+      <p id="r-sub"></p>
+      <p>最大警戒度 <b id="r-max"></b></p>
+      <div class="ttl" id="r-title"></div>
+      <p class="hint" id="r-hint" hidden>ヒント：犬は、となりの列からそっと近づくと…？</p>
+      <div class="skill" id="r-skill" hidden><span class="sk-rank" id="r-sk-rank">S</span><span><small>腕前ランク</small><b id="r-sk-name"></b></span></div>
+      <div class="rank" id="r-rank" hidden>
+        <div class="rank-head" id="r-rank-head"></div>
+        <div class="tabs"><button class="tab on" id="t-normal">ふつう</button><button class="tab" id="t-hard">？？？</button><button class="tab" id="t-dog">？？？</button></div>
+        <div class="rank-sum" id="r-rank-sum"></div>
+        <ol id="r-rank-list"></ol>
+        <div id="r-near"></div>
+        <div class="rank-note" id="r-rank-note">警戒度が低いほど上（この端末の記録）</div>
+      </div>
+      <div class="res-btns">
+        <a class="btn x" id="b-share" href="https://x.com/" target="_blank" rel="noopener">𝕏 で気まずさを共有</a>
+        <button class="btn main span2" id="b-again">もう一回</button>
+      </div>
+      <button class="link-btn" id="b-title">タイトルへ</button>
+      <p class="hint uwasa" id="r-uwasa" hidden></p>
+      <p class="author" data-where="result"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://www.youtube.com/@futarigurashi_games/videos" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <div class="pad-info">
+      <div class="gear"><small>速さ</small><b id="g-name">ふつう</b><div class="dots" id="g-dots"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="lane"><small>歩いている列</small><b id="l-name">奥</b><div class="lanes" id="l-dots"><i></i><i></i><i></i></div></div>
+    </div>
+    <div class="dpad" aria-label="十字キー">
+      <button class="dp up" id="b-up" aria-label="奥へ">▲<small>奥へ</small></button>
+      <button class="dp left" id="b-slow" aria-label="おそく">◀<small>おそく</small></button>
+      <span class="dp mid"></span>
+      <button class="dp right" id="b-fast" aria-label="はやく">▶<small>はやく</small></button>
+      <button class="dp down" id="b-down" aria-label="手前へ">▼<small>手前へ</small></button>
+    </div>
+  </div>
+  <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
+</div>
+<script src="logic.js?v=20261119094730"></script>
+<script src="game.js?v=20261119094730"></script>
+</body>
+</html>
