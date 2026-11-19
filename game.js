@@ -869,7 +869,7 @@
     const fsOK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
     const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
     let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
-    const standalone = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches));
+    const standalone = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); // F11 の全画面（display-mode: fullscreen）では消さない（2026-11-19・Edge で出なかった）
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const show = !embedded && !standalone && (fsOK || isIOS);
     $('b-fs').hidden = $('b-fs2').hidden = !show;
@@ -885,6 +885,7 @@
     $('b-fs').addEventListener('click', toggle); $('b-fs2').addEventListener('click', toggle);
     $('b-a2hs-ok').addEventListener('click', () => { $('o-a2hs').hidden = true; });
     document.addEventListener('fullscreenchange', label); document.addEventListener('webkitfullscreenchange', label);
+    label();
   }
   $('b-resume').onclick = resume;
   $('b-restart').onclick = () => { track('restart'); start(); };
