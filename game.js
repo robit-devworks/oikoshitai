@@ -862,6 +862,30 @@
     newDemo(); hud(); resetLogo(); $('pname').value = getName();
   }
   $('b-menu').addEventListener('click', pause);
+  // ---- 全画面（スワリタイ・デストロイ碁と同じしくみ。2026-11-19・本人）----
+  // iPhone の Safari は全画面にできないので、ホーム画面に追加する手順を出す。ホーム画面から開いているときと、ほかのページの中（claude.ai など）では出さない
+  {
+    const fsT = document.documentElement;
+    const fsOK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+    const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+    let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    const standalone = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches));
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const show = !embedded && !standalone && (fsOK || isIOS);
+    $('b-fs').hidden = $('b-fs2').hidden = !show;
+    $('a2hs-steps').innerHTML = ['アドレスバーの<b>共有ボタン</b>（□に↑）を押す', '「<b>ホーム画面に追加</b>」を選ぶ', 'ホーム画面の<b>オイコシタイのアイコン</b>から開く'].map((t) => `<li>${t}</li>`).join('');
+    const label = () => { const on = !!fsEl(); $('b-fs').textContent = on ? '✕' : '⛶'; $('b-fs').setAttribute('aria-label', on ? '全画面を終了' : '全画面'); $('b-fs2').textContent = on ? '全画面を終了' : '⛶ 全画面'; };
+    const toggle = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (!fsOK) { $('o-a2hs').hidden = false; track('fs-a2hs'); return; }
+      const req = fsT.requestFullscreen || fsT.webkitRequestFullscreen, exit = document.exitFullscreen || document.webkitExitFullscreen;
+      try { const r = fsEl() ? exit.call(document) : req.call(fsT); if (r && r.catch) r.catch(() => {}); } catch (err) {}
+      track(fsEl() ? 'fs-off' : 'fs-on');
+    };
+    $('b-fs').addEventListener('click', toggle); $('b-fs2').addEventListener('click', toggle);
+    $('b-a2hs-ok').addEventListener('click', () => { $('o-a2hs').hidden = true; });
+    document.addEventListener('fullscreenchange', label); document.addEventListener('webkitfullscreenchange', label);
+  }
   $('b-resume').onclick = resume;
   $('b-restart').onclick = () => { track('restart'); start(); };
   $('b-ptitle').onclick = toTitle;

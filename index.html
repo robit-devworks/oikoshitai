@@ -151,6 +151,12 @@
   .name-row input:focus { outline: none; border-color: var(--lamp); }
   .menu-btn { position: absolute; top: 8px; right: 8px; z-index: 4; width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: rgba(14, 18, 40, .75); color: var(--ink); font-size: 20px; cursor: pointer; }
   body.menu .menu-btn { display: none; }
+  /* 全画面（2026-11-19・本人）：右上の ☰ のとなり。タイトルや結果の画面でも出す */
+  .menu-btn.fs-btn { right: 58px; font-size: 18px; }
+  body.menu .menu-btn.fs-btn { display: block; right: 8px; }
+  .menu-btn.fs-btn[hidden], body.menu .menu-btn.fs-btn[hidden] { display: none; }
+  #o-a2hs { z-index: 6; background: rgba(5, 7, 18, .96); }
+  #o-a2hs ol { text-align: left; margin: 0; padding-left: 1.4em; line-height: 1.8; font-size: 14px; color: var(--ink); max-width: 330px; }
   .res-btns .span2 { grid-column: 1 / -1; }
   .vol { display: grid; grid-template-columns: auto 1fr 3em; gap: 10px 10px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 14px; text-align: left; font-size: 13px; color: var(--sub); }
   .vol input[type=range] { width: 100%; accent-color: var(--lamp); min-width: 0; }
@@ -216,6 +222,7 @@
   <div class="stage">
     <canvas id="cv"></canvas>
     <button class="menu-btn" id="b-menu" aria-label="メニュー（一時停止）">☰</button>
+    <button class="menu-btn fs-btn" id="b-fs" aria-label="全画面" hidden>⛶</button>
     <div class="over" id="o-pause" hidden>
       <div class="head">一時停止</div>
       <div class="res-btns">
@@ -223,6 +230,7 @@
         <button class="btn" id="b-restart">やりなおす</button>
         <button class="btn" id="b-ptitle">タイトルへ</button>
         <button class="btn span2 hand-btn" id="b-hand2">十字キー：右手</button>
+        <button class="btn span2" id="b-fs2" hidden>⛶ 全画面</button>
         <div class="vol span2">
           <label for="v-bgm">BGM（虫の声）</label><input type="range" id="v-bgm" min="0" max="100" step="10"><b id="v-bgm-n">100</b>
           <label for="v-se">効果音</label><input type="range" id="v-se" min="0" max="100" step="10"><b id="v-se-n">100</b>
@@ -240,6 +248,12 @@
     <div class="over" id="o-rank" hidden>
       <div id="o-rank-body"></div>
       <button class="btn small" id="b-rankback">もどる</button>
+    </div>
+    <div class="over" id="o-a2hs" hidden>
+      <div class="head">全画面で遊ぶには</div>
+      <p>この画面（iPhone など）では全画面のボタンが使えません。<br><b>ホーム画面に追加</b>すると、ブラウザのバーなしで遊べます。</p>
+      <ol id="a2hs-steps"></ol>
+      <button class="btn main" id="b-a2hs-ok">わかった</button>
     </div>
     <div class="over" id="o-title">
       <button class="moon-btn" id="b-moon" aria-label="月"></button>
@@ -302,7 +316,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261119115646"></script>
-<script src="game.js?v=20261119115646"></script>
+<script src="logic.js?v=20261119150748"></script>
+<script src="game.js?v=20261119150748"></script>
 </body>
 </html>
