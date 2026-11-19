@@ -14,9 +14,15 @@
   let vol = { bgm: 1, se: 1 };
   try { vol = Object.assign(vol, JSON.parse(localStorage.getItem(VOL_KEY) || '{}')); } catch (e) {}
   let ac = null, seGain = null;
+  // 本人が用意した効果音（mp3。2026-11-19）：おまわりさんに止められた・ちらっ／目が合った・犬の鳴き声（もらった音から「ワンワン」を切り出した）・ぶつかった
+  const SAMPLES = { police: { src: window.OIKOSHI_POLICE || 'sounds/police.mp3', vol: 0.45 }, look: { src: window.OIKOSHI_LOOK || 'sounds/look.mp3', vol: 0.45 }, bark: { src: window.OIKOSHI_BARK || 'sounds/bark.mp3', vol: 0.4 }, hit: { src: window.OIKOSHI_HIT || 'sounds/hit.mp3', vol: 0.5 } };
+  function playSample(k) { const a = audio(), S = SAMPLES[k]; if (!a || !S.buf) return false; const s = a.createBufferSource(), v = a.createGain(); v.gain.value = S.vol; s.buffer = S.buf; s.connect(v).connect(seGain || a.destination); s.start(); return true; }
   function audio() {
     try {
-      if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); seGain = ac.createGain(); seGain.gain.value = vol.se; seGain.connect(ac.destination); }
+      if (!ac) {
+        ac = new (window.AudioContext || window.webkitAudioContext)(); seGain = ac.createGain(); seGain.gain.value = vol.se; seGain.connect(ac.destination);
+        for (const S of Object.values(SAMPLES)) fetch(S.src).then((r) => r.arrayBuffer()).then((b) => ac.decodeAudioData(b)).then((b) => { S.buf = b; }).catch(() => {}); // 先に読んでおく
+      }
       if (ac.state === 'suspended') ac.resume();
     } catch (e) {}
     return ac;
@@ -47,15 +53,19 @@
       tone(gear === 4 ? 700 : 1000, 0.03, 'triangle', vol * 0.25);
     },
     herStep: () => tone(2200, 0.03, 'triangle', 0.012), // 相手のヒール（小さめ）
-    bad: () => tone(520, 0.25, 'square', 0.04, 260),
+    bad: () => { if (!playSample('look')) tone(520, 0.25, 'square', 0.04, 260); }, // ちらっ／目が合った（読みこめていなければ前の音）
     good: () => { tone(660, 0.1, 'triangle', 0.06); setTimeout(() => tone(990, 0.15, 'triangle', 0.06), 90); },
-    flee: () => tone(900, 0.5, 'sawtooth', 0.04, 200),
+    // 逃げられた：ヒールで走り去る（たたたた…とだんだん遠く）。前はノコギリ波のビューン → 「ぴこっ」もいらない（2026-11-19・本人）
+    flee: () => {
+      for (let i = 0; i < 9; i++) setTimeout(() => { const v = 0.05 * Math.pow(0.78, i); tone(2300, 0.03, 'triangle', v); noise(0.03, v * 1.6, 3000); }, i * 95);
+    },
     pass: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'triangle', 0.07), i * 100)),
     same: () => [392, 370, 349, 330].forEach((f, i) => setTimeout(() => tone(f, 0.35, 'sine', 0.06), i * 260)),
     rare: () => [784, 988, 1175, 1568, 1175, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'square', 0.04), i * 90)),
-    bump: () => noise(0.25, 0.6, 200),
-    bark: () => { tone(560, 0.07, 'square', 0.07, 380); setTimeout(() => tone(600, 0.08, 'square', 0.07, 400), 120); },
+    bump: () => { if (!playSample('hit')) noise(0.25, 0.6, 200); }, // 電柱・女性にぶつかった（読みこめていなければ前の音）
+    bark: () => { if (!playSample('bark')) { tone(560, 0.07, 'square', 0.07, 380); setTimeout(() => tone(600, 0.08, 'square', 0.07, 400), 120); } }, // 読みこめていなければ前の音
     bell: () => { tone(2600, 0.12, 'sine', 0.06); setTimeout(() => tone(2600, 0.15, 'sine', 0.06), 160); },
+    police: () => playSample('police'), // おまわりさんに止められた・ぶつかった
     wag: () => [880, 1100, 1320].forEach((f, i) => setTimeout(() => tone(f, 0.08, 'triangle', 0.05), i * 70)),
   };
 
@@ -296,7 +306,7 @@
     hardMode = false; dogMode = false; taps = 0; moonTaps = 0;
     logo.classList.remove('flee'); logo.style.transform = '';
     logo.classList.toggle('fidget', unlocked());
-    $('b-story').hidden = !unlocked(); // ストーリーは一度クリアすると出てくる
+    $('b-story').hidden = false; // ストーリーは最初から遊べる（2026-11-19・本人：けっこう楽しいので）
     $('hint').hidden = !(SHOW_HINT && unlocked());
     logoSub.textContent = '夜道の気まずさゲーム'; logoSub.classList.remove('hard');
     $('b-start').textContent = '家に帰る';
@@ -656,16 +666,19 @@
     const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
     if (playing && !paused) {
       OK.step(g, dt);
+      const fleeNow = g.events.slice(seenEv).some((e) => e.kind === 'end' && (e.id === 'flee' || e.id === 'konbini')); // 同時に逃げられたら、ダッシュの音だけ（2026-11-19・本人）
       for (; seenEv < g.events.length; seenEv++) {
         const e = g.events[seenEv];
-        if (e.kind === 'look') { SE.bad(); pops.push({ s: 'ちらっ', x: g.her.x, t: 1.2, c: '#ffd0d0' }); }
-        if (e.kind === 'eye') { SE.bad(); pops.push({ s: '目が合った', x: g.her.x, t: 1.2, c: '#ff8a96' }); }
+        if (e.kind === 'look' || e.kind === 'eye') pops = pops.filter((p) => !p.her); // 女性の頭の上の文字は 1 つだけ（続けて出ると重なって読めないので、新しいほうに入れかえる）
+        if (e.kind === 'look') { if (!fleeNow) SE.bad(); pops.push({ s: 'ちらっ', x: g.her.x, t: 1.2, c: '#ffd0d0', her: 1 }); }
+        if (e.kind === 'eye') { if (!fleeNow) SE.bad(); pops.push({ s: '目が合った', x: g.her.x, t: 1.2, c: '#ff8a96', her: 1 }); }
         if (e.kind === 'bark') SE.bark();
         if (e.kind === 'bell') { SE.bell(); pops.push({ s: 'チリンチリン！', x: g.me.x, t: 1.2, c: '#9fd0ff' }); }
         if (e.kind === 'cop') pops.push({ s: '自転車のおまわりさんが来た', x: g.me.x + 10, t: 1.6, c: '#9fd0ff' });
         if (e.kind === 'wag') { SE.wag(); pops.push({ s: 'しっぽフリフリ', x: g.dog.x, t: 1.4, c: '#ffd76a' }); }
         if (e.kind === 'end' && (e.id === 'flee' || e.id === 'konbini')) SE.flee();
         if (e.kind === 'end' && (e.id === 'pole' || e.id === 'bump')) SE.bump();
+        if (e.kind === 'end' && (e.id === 'shokushitsu' || e.id === 'copbump')) SE.police();
       }
       hud();
       if (g.end && !shown) {
@@ -713,12 +726,13 @@
     [...$('g-dots').children].forEach((el, i) => { el.className = (i <= g.me.gear ? 'on' : '') + (g.me.gear === 4 ? ' run' : ''); });
   }
 
-  function start() {
+  function start(force) { // force：モードを決めて始める（宣伝動画を作るときだけ。'normal'・'hard'・'dog'）
+    force = typeof force === 'string' ? force : null;
     pushName();
     document.body.classList.remove('menu'); paused = false; $('o-pause').hidden = true; $('o-rank').hidden = true;
     audio(); playBgm();
     const sc = story && OK.storyChapter(story.ch, story.route); // ストーリー中は、その話のモード
-    g = sc ? OK.newGame(null, Object.assign({ mode: sc.mode }, sc.opts)) : OK.newGame(null, { mode: dogMode ? 'dog' : hardMode ? 'hard' : 'normal' }); seenEv = 0;
+    g = sc ? OK.newGame(null, Object.assign({ mode: sc.mode }, sc.opts)) : OK.newGame(null, { mode: force || (dogMode ? 'dog' : hardMode ? 'hard' : 'normal') }); seenEv = 0;
     $('o-story').hidden = true; pops = []; shown = false; myPhase = herPhase = 0;
     $('o-title').hidden = true; $('o-result').hidden = true;
     playing = true; track('start'); hud();

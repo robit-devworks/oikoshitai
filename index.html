@@ -190,6 +190,10 @@
   .st-legend { font-size: 11px; color: var(--sub); } .st-legend .g { color: var(--safe); } .st-legend .r { color: var(--danger); } .st-days .c0 { background: var(--safe); } .st-days .c1 { background: #e3d24f; } .st-days .c2 { background: var(--warn); } .st-days .c3 { background: var(--danger); }
   .btn.x.st-share { width: 100%; max-width: 340px; }
   .story-btn { border-color: #7fd3ff; color: #bfe9ff; }
+  /* タイトルの「家に帰る」と「ストーリー」は同じ大きさ（2026-11-19・本人） */
+  #b-start, #b-story { width: min(300px, 88%); height: 56px; min-height: 0; flex-shrink: 0; padding: 0 8px; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
+  #b-story { font-size: 17px; }
+  @media (max-height: 700px) { #b-start, #b-story { height: 44px; } }
   @media (prefers-reduced-motion: reduce) { .st-text p { animation: none; opacity: 1; } }
   body.menu .ctl, body.menu .keys { display: none; }
   body.menu .hud { visibility: hidden; } /* タイトル・結果では警戒度を出さない */
@@ -250,7 +254,7 @@
       <label class="name-row">プレイヤー名 <input id="pname" maxlength="10" placeholder="名無しの通行人" autocomplete="off" enterkeyhint="done"></label>
       <p class="name-err" id="name-err" hidden>その名前は使えません。ちがう名前にしてね</p>
       <button class="btn main" id="b-start">家に帰る</button>
-      <button class="btn small story-btn" id="b-story" hidden>ストーリー（月〜金の帰り道）</button>
+      <button class="btn story-btn" id="b-story">ストーリー（月〜金の帰り道）</button>
       <button class="btn small" id="b-rank">ランキング</button>
       <p class="author" data-where="title"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://www.youtube.com/@futarigurashi_games/videos" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
       <p class="hint" id="dev-id" hidden style="user-select:text;-webkit-user-select:text;font-size:11px"></p>
@@ -298,7 +302,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261119095733"></script>
-<script src="game.js?v=20261119095733"></script>
+<script src="logic.js?v=20261119115646"></script>
+<script src="game.js?v=20261119115646"></script>
 </body>
 </html>
