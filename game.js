@@ -183,6 +183,8 @@
     try { localStorage.setItem(DEV_KEY, '1'); localStorage.setItem(NAME_KEY, DEV_NAME); localStorage.setItem('destroy-go-dev', '1'); } catch (e) {}
     try { history.replaceState(null, '', location.pathname + location.search.replace(/[?&]dev=robit\b/, '').replace(/^&/, '?') + location.hash); } catch (e) {}
   }
+  // 開発者の端末では、タイトルの下に端末 ID（Firebase の匿名 ID）を出す（ほかの端末をデータベースの決まりに足すとき用）
+  if (isDev() && fbAllowed) setTimeout(() => firebaseReady().then((F) => { if (F) { const el = $('dev-id'); el.textContent = '開発者の端末 ID：' + F.uid; el.hidden = false; } }).catch(() => {}), 0);
   const allowName = (n) => OK.nameOK(n) || (n === DEV_NAME && isDev()); // 自分の名前に使えるか
   const okName = (t) => { const n = cleanName(t); return OK.nameOK(n) || n === DEV_NAME ? n : ''; }; // 出すとき：使えない言葉が入っていたら名無し（開発者の名前はそのまま）
   const getName = () => { try { const n = cleanName(localStorage.getItem(NAME_KEY)); return allowName(n) ? n : ''; } catch (e) { return ''; } };
