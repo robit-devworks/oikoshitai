@@ -72,6 +72,9 @@
   .skill small { display: block; font-size: 11px; color: var(--sub); } .skill b { font-size: 16px; }
   .sk-rank { font-family: "Dela Gothic One", "Hiragino Sans", sans-serif; font-size: 34px; line-height: 1; width: 1.2em; text-align: center; color: var(--sub); }
   .skill.r-S { border-color: var(--lamp); box-shadow: 0 0 18px rgba(255, 215, 106, .35); } .skill.r-S .sk-rank { color: var(--lamp); }
+  .sk-table { margin: -4px 0 0; font-size: 12px; color: var(--sub); line-height: 1.6; } .sk-table b { color: var(--ink); }
+  .sk-table span { display: inline-flex; gap: 6px; } .sk-table i { font-style: normal; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); }
+  .sk-table i.on { border-color: var(--lamp); color: var(--lamp); } .sk-table small { display: block; font-size: 11px; }
   .skill.r-A .sk-rank { color: var(--safe); } .skill.r-B .sk-rank { color: #9fd0ff; } .skill.r-C .sk-rank { color: var(--danger); }
   /* 下：操作 */
   /* 下：片手で押せる十字キー（右下）と、いまの速さ・列（左） */
@@ -176,6 +179,21 @@
   @keyframes stIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .st-no { font-family: "Dela Gothic One", sans-serif; font-size: 15px; letter-spacing: .12em; color: var(--lamp); }
   .st-no span { font-size: 11px; color: var(--sub); } .st-no i { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; font-weight: 700; font-style: normal; font-size: 10px; margin-left: 8px; padding: 1px 6px; border-radius: 6px; background: var(--danger); color: #fff; letter-spacing: .05em; vertical-align: 2px; }
+  /* 結末の一覧（タイトルから・2026-11-19・本人） */
+  .title-row { display: flex; gap: 10px; justify-content: center; flex-shrink: 0; }
+  #o-ends { background: #070918; justify-content: flex-start; gap: 10px; z-index: 5; }
+  #o-ends::before { margin-top: 0; }
+  .ends-sum { font-size: 13px; color: var(--sub); } .ends-sum b { color: var(--lamp); }
+  .ends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 340px; font-size: 13px; line-height: 1.45; text-align: left; }
+  .ends-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.04); }
+  .ends-list li.got { background: rgba(255,215,106,.08); }
+  .ends-list li > b { font-family: "Dela Gothic One", sans-serif; font-weight: 400; color: var(--lamp); min-width: 24px; }
+  .ends-list .t { color: var(--ink); font-weight: 700; } .ends-list li:not(.got) .t { color: #8890b8; }
+  .ends-list small { display: block; font-size: 12px; } .ends-list .s { color: var(--lamp); } .ends-list .h { color: #bfe9ff; }
+  .ends-list .ex { font-style: normal; font-size: 10px; padding: 1px 5px; border-radius: 5px; margin-right: 4px; vertical-align: 1px; background: linear-gradient(90deg,#ff5e7e,#ffb84d,#6bff8f,#5ec8ff,#b07bff); color: #111; font-weight: 700; }
+  .ends-list li:not(.got) .ex { background: none; border: 1px solid #8890b8; color: #8890b8; margin: 0 0 0 6px; }
+  .ends-list li.ten { justify-content: center; border: 1px dashed #555c88; background: none; color: #8890b8; font-size: 12px; }
+  .ends-list li.ten.got { border-color: var(--lamp); }
   .st-list { width: 100%; max-width: 340px; font-size: 12px; color: var(--sub); text-align: left; }
   .st-list summary { cursor: pointer; text-align: center; padding: 4px; }
   .st-list ol { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -249,6 +267,12 @@
       <div id="o-rank-body"></div>
       <button class="btn small" id="b-rankback">もどる</button>
     </div>
+    <div class="over" id="o-ends" hidden>
+      <div class="head">📖 結末の一覧</div>
+      <div class="ends-sum">見つけた結末　<b id="ends-n">0</b>／<span id="ends-total">9</span></div>
+      <ol class="ends-list" id="ends-list"></ol>
+      <button class="btn small" id="b-endsback">もどる</button>
+    </div>
     <div class="over" id="o-a2hs" hidden>
       <div class="head">全画面で遊ぶには</div>
       <p>この画面（iPhone など）では全画面のボタンが使えません。<br><b>ホーム画面に追加</b>すると、ブラウザのバーなしで遊べます。</p>
@@ -269,7 +293,7 @@
       <p class="name-err" id="name-err" hidden>その名前は使えません。ちがう名前にしてね</p>
       <button class="btn main" id="b-start">家に帰る</button>
       <button class="btn story-btn" id="b-story">ストーリー（月〜金の帰り道）</button>
-      <button class="btn small" id="b-rank">ランキング</button>
+      <div class="title-row"><button class="btn small" id="b-rank">ランキング</button><button class="btn small" id="b-ends">📖 結末の一覧　<span id="b-ends-n">0／9</span></button></div>
       <p class="author" data-where="title"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://www.youtube.com/@futarigurashi_games/videos" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
       <p class="hint" id="dev-id" hidden style="user-select:text;-webkit-user-select:text;font-size:11px"></p>
       <button class="link-btn hand-btn" id="b-hand1">十字キー：右手</button>
@@ -283,6 +307,7 @@
       <div class="ttl" id="r-title"></div>
       <p class="hint" id="r-hint" hidden>ヒント：犬は、となりの列からそっと近づくと…？</p>
       <div class="skill" id="r-skill" hidden><span class="sk-rank" id="r-sk-rank">S</span><span><small>腕前ランク</small><b id="r-sk-name"></b></span></div>
+      <p class="sk-table" id="r-sk-table"></p>
       <div class="rank" id="r-rank" hidden>
         <div class="rank-head" id="r-rank-head"></div>
         <div class="tabs"><button class="tab on" id="t-normal">ふつう</button><button class="tab" id="t-hard">？？？</button><button class="tab" id="t-dog">？？？</button></div>
@@ -316,7 +341,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261119160601"></script>
-<script src="game.js?v=20261119160601"></script>
+<script src="logic.js?v=20261119231058"></script>
+<script src="game.js?v=20261119231058"></script>
 </body>
 </html>

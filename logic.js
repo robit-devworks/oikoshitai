@@ -387,8 +387,8 @@
   STORY_ENDS.loop.no = STORY_ORDER.length + 1;
   // うわさ：ふつうの結果画面の下に、まだ見つけていない隠し要素のヒントを 1 つ（found：見つけた隠し要素の id）
   const UWASA = [
-    { id: 'hard', text: 'うわさ：タイトルは、さわられるのが苦手らしい……？' },
-    { id: 'dog', text: 'うわさ：夜空の月も、つつかれると……？' },
+    { id: 'hard', text: 'うわさ：見回りが強化される夜は、タイトルも落ち着かないらしい……？' },
+    { id: 'dog', text: 'うわさ：満月の夜は、犬の散歩をする人が増えるらしい……？' }, // 前の文は直接すぎた（2026-11-19・本人）
   ];
   function uwasa(found, r) { const left = UWASA.filter((u) => !found.includes(u.id)); return left.length ? left[Math.floor((r || 0) * left.length)].text : ''; }
   // 感動の結末のメモ：月〜木の夜に、その人がしたことを女性の目で書く（先に当てはまるものから。同じ書き方は 2 回使わない）
@@ -451,6 +451,12 @@
     const rank = (key === 'dogfriend' ? SKILL_FRIEND : SKILL).find(([v]) => max <= v)[1];
     return { rank, name: (SKILL_NAMES[key] || SKILL_NAMES.normal)[rank] };
   }
+  // 腕前ランクの基準（結果画面に出す）：[[15,'S'],[25,'A'],[45,'B']] と、次のランクまであと何 %
+  function skillTable(mode, friend) { return (mode === 'dog' && friend ? SKILL_FRIEND : SKILL).filter(([, r]) => r !== 'C'); }
+  function skillNext(mode, max, friend) {
+    const t = skillTable(mode, friend), up = t.slice().reverse().find(([v]) => max > v);
+    return up ? { rank: up[1], need: max - up[0] } : null; // null：もう S
+  }
 
   // 警戒度の移り変わりを 8 マスの色で（🟩 平気 → 🟨 → 🟧 → 🟥 ヤバい）
   function susBar(trace) {
@@ -478,5 +484,5 @@
       `▶ 気まずさを体験する\n${url}\n\n#オイコシタイ #バカゲー #個人開発`;
   }
 
-  return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, susBar, shareText, normName, nameOK };
+  return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, skillTable, skillNext, susBar, shareText, normName, nameOK };
 });

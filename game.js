@@ -308,6 +308,7 @@
     logo.classList.remove('flee'); logo.style.transform = '';
     logo.classList.toggle('fidget', unlocked());
     $('b-story').hidden = false; // ストーリーは最初から遊べる（2026-11-19・本人：けっこう楽しいので）
+    $('b-ends-n').textContent = OK.STORY_ORDER.filter((k) => sFound.has(k)).length + '／' + OK.STORY_ORDER.length;
     $('hint').hidden = !(SHOW_HINT && unlocked());
     logoSub.textContent = '夜道の気まずさゲーム'; logoSub.classList.remove('hard');
     $('b-start').textContent = '家に帰る';
@@ -755,7 +756,11 @@
     $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); // 犬の散歩でなつかずに終わったら、なつかせ方のヒント
     { const clr = OK.PASS_ENDS.includes(r.id), sk = OK.skill(g.mode, r.max, r.friend); // 腕前ランク（クリアしたときだけ）
       $('r-skill').hidden = !clr; $('r-skill').className = 'skill r-' + sk.rank;
-      $('r-sk-rank').textContent = sk.rank; $('r-sk-name').textContent = sk.name; }
+      $('r-sk-rank').textContent = sk.rank; $('r-sk-name').textContent = sk.name;
+      // 腕前ランクの基準と、次のランクまで（2026-11-19・本人：ゲームの中で分かるように）
+      const fr = g.mode === 'dog' && r.friend, nx = OK.skillNext(g.mode, r.max, fr);
+      $('r-sk-table').innerHTML = (clr ? (nx ? `あと <b>${nx.need}%</b> 低ければ ${nx.rank}　` : '<b>最高ランク！</b>　') : 'クリアすると腕前ランク　') +
+        `<span>${OK.skillTable(g.mode, fr).map(([v, k]) => `<i class="${clr && k === sk.rank ? 'on' : ''}">${k} ${v}%以下</i>`).join('')}</span>` + (fr ? '<small>（なつかせてクリアしたときの基準）</small>' : ''); }
     const clear = OK.PASS_ENDS.includes(r.id);
     const place = clear ? addRank(r, g.mode) : 0;
     if (clear && g.mode === 'hard') { try { localStorage.setItem('oikoshi-hardclear', '1'); } catch (e) {} } // 犬の散歩モードの入口が開く
@@ -919,6 +924,20 @@
     $('o-title').hidden = true; $('o-rank').hidden = false;
     lastPlace = { mode: 'normal', now: 0 }; showRank('normal'); track('rank-from-title');
   };
+  // ---- タイトルから結末の一覧：見つけたものは題と★、まだのものは ？？？ とヒント（2026-11-19・本人）----
+  function showEnds() {
+    const nn = (n) => String(n).padStart(2, '0'), got = OK.STORY_ORDER.filter((k) => sFound.has(k)).length;
+    $('ends-n').textContent = got; $('ends-total').textContent = OK.STORY_ORDER.length;
+    $('ends-list').innerHTML = OK.STORY_ORDER.map((k) => {
+      const e = OK.STORY_ENDS[k], has = sFound.has(k), ex = e.extra ? '<i class="ex">EXTRA</i>' : '';
+      return has ? `<li class="got"><b>${nn(e.no)}</b><span><span class="t">${ex}${esc(e.head)}</span><small class="s">${'★'.repeat(e.stars)}${'☆'.repeat(3 - e.stars)}</small></span></li>`
+        : `<li><b>${nn(e.no)}</b><span><span class="t">？？？${ex}</span><small class="h">💡 ${esc(e.hint)}</small></span></li>`;
+    }).join('') + (sFound.has('loop') ? `<li class="ten got"><b>10</b><span class="t">${esc(OK.STORY_ENDS.loop.head)}（称号：${esc(OK.STORY_ENDS.loop.title)}）</span></li>`
+      : '<li class="ten">10　？？？　……9 つそろえると、なにかが起きる</li>');
+    $('o-title').hidden = true; $('o-ends').hidden = false; $('o-ends').scrollTop = 0; track('ends-from-title');
+  }
+  $('b-ends').onclick = showEnds;
+  $('b-endsback').onclick = () => { $('o-ends').hidden = true; $('o-title').hidden = false; };
   $('b-rankback').onclick = () => { rankHome.insertBefore(rankBox, rankNext); $('o-rank').hidden = true; $('o-title').hidden = false; };
 
   // ---- 操作 ----
