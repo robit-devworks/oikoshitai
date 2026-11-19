@@ -175,10 +175,19 @@
   // プレイヤー名：自分で入れた名前だけをランキングに出す（claude.ai のアカウント名は使わない）。この端末に覚える
   const NAME_KEY = 'oikoshi-name', NONAME = '名無しの通行人';
   const cleanName = (t) => String(t || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 10);
-  const okName = (t) => { const n = cleanName(t); return OK.nameOK(n) ? n : ''; }; // 使えない言葉が入っていたら名無し
-  const getName = () => { try { return okName(localStorage.getItem(NAME_KEY)); } catch (e) { return ''; } };
+  // 開発者の名前：一度だけ ?dev=robit をつけて開くと「ROBIT（開発者）」になる（スワリタイと同じ）。
+  // ランキングに書けるのは、データベースの決まりで開発者の端末だけ（ほかの端末で入れても書けない）
+  const DEV_NAME = 'ROBIT（開発者）', DEV_KEY = 'oikoshi-dev';
+  const isDev = () => { try { return localStorage.getItem(DEV_KEY) === '1'; } catch (e) { return false; } };
+  if (/[?&]dev=robit\b/.test(location.search)) {
+    try { localStorage.setItem(DEV_KEY, '1'); localStorage.setItem(NAME_KEY, DEV_NAME); localStorage.setItem('destroy-go-dev', '1'); } catch (e) {}
+    try { history.replaceState(null, '', location.pathname + location.search.replace(/[?&]dev=robit\b/, '').replace(/^&/, '?') + location.hash); } catch (e) {}
+  }
+  const allowName = (n) => OK.nameOK(n) || (n === DEV_NAME && isDev()); // 自分の名前に使えるか
+  const okName = (t) => { const n = cleanName(t); return OK.nameOK(n) || n === DEV_NAME ? n : ''; }; // 出すとき：使えない言葉が入っていたら名無し（開発者の名前はそのまま）
+  const getName = () => { try { const n = cleanName(localStorage.getItem(NAME_KEY)); return allowName(n) ? n : ''; } catch (e) { return ''; } };
   function saveName(t) { // 使えない言葉なら保存しない（false）
-    const n = cleanName(t); if (!OK.nameOK(n)) return false;
+    const n = cleanName(t); if (!allowName(n)) return false;
     try { localStorage.setItem(NAME_KEY, n); } catch (e) {}
     return true;
   }
