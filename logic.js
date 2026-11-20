@@ -468,13 +468,15 @@
   }
 
   // シェアする文。best：クリアのときの自己ベスト順位（1 なら「自己ベスト」）
-  // シェアの文（2026-11-20・本人：ほかのゲームのシェアを参考に、1 行＋URL＋タグだけ。画像に大きく警戒度を出す）
+  // シェアの文（2026-11-20・本人：1 行だけはシンプルすぎたので、結末・★・最大警戒度・腕前ランク・ひとことの形に戻した）
   function shareText(r, found, url, trace, best, mode) {
     if (mode === true) mode = 'hard';
     const clear = PASS_ENDS.includes(r.id), sk = skill(mode || 'normal', r.max, r.friend);
-    const tag = mode && mode !== 'normal' ? `【${MODES[mode]}モード】` : '';
-    const line = clear ? `警戒度${r.max}%で追いこした！（腕前ランク ${sk.rank}）` : `「${r.head}」警戒度${r.max}%`;
-    return `${tag}${line}\n${url}\n#オイコシタイ #バカゲー #個人開発`;
+    return `【オイコシタイ！】${mode && mode !== 'normal' ? MODES[mode] + 'モード' : ''}\n` +
+      `${clear ? 'CLEAR!' : ''}「${r.head}」${'★'.repeat(r.stars)}${'☆'.repeat(3 - r.stars)} 最大警戒度 ${r.max}%${clear && best === 1 ? '（自己ベスト）' : ''}\n` +
+      (clear ? `腕前ランク ${sk.rank}「${sk.name}」\n` : '') +
+      `${r.quip}\n\n` +
+      `▶ 夜道の気まずさゲーム\n${url}\n\n#オイコシタイ #バカゲー #個人開発`;
   }
 
   return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, skillTable, skillNext, shareText, normName, nameOK };

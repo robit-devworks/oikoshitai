@@ -525,6 +525,8 @@
       ctx.globalAlpha = Math.min(1, p.t * 2); ctx.fillStyle = p.c; ctx.font = `800 ${Math.max(16, H * 0.05)}px sans-serif`; ctx.textAlign = 'center';
       ctx.fillText(p.s, sx(p.x), laneY(her.z) - ph * (1.45 + (1.2 - p.t) * 0.2)); ctx.globalAlpha = 1;
     }
+    // シェアの画像用：結末の少しあと（まだ女性が画面にいるうち）。CLEAR! を描く前にとる（2026-11-20・本人：共有画像に CLEAR はいらない）
+    if (playing && g.end && !g.demo && !endSnap && g.endT >= 0.3) { endSnap = document.createElement('canvas'); endSnap.width = cv.width; endSnap.height = cv.height; endSnap.getContext('2d').drawImage(cv, 0, 0); }
     // 追いこせたら CLEAR!
     if (g.end && OK.PASS_ENDS.includes(g.end) && !g.demo && $('o-story').hidden) { // デモ（タイトルの後ろ）では出さない
       const k = Math.min(1, g.endT * 4), fs = Math.min(W * 0.2, H * 0.18) * (0.6 + 0.4 * k);
@@ -698,7 +700,6 @@
       if (g.end && g.endT > 2.5) newDemo();
     }
     draw(ddt);
-    if (playing && g.end && !g.demo && !endSnap && g.endT >= 0.3) { endSnap = document.createElement('canvas'); endSnap.width = cv.width; endSnap.height = cv.height; endSnap.getContext('2d').drawImage(cv, 0, 0); } // シェアの画像用：結末の少しあと（まだ女性が画面にいるうち）
     // 足音：足を 1 歩出すたびに鳴らす（歩くリズムは draw の中で進むので、そのあとで調べる）
     const mi = Math.floor(myPhase / Math.PI), hi = Math.floor(herPhase / Math.PI);
     if (playing && !g.end) {
@@ -885,6 +886,8 @@
     newDemo(); hud(); resetLogo(); $('pname').value = getName();
   }
   $('b-menu').addEventListener('click', pause);
+  // タイトルが右へ逃げるとき、タイトル画面が横にずれないように（はみ出したロゴに合わせて横スクロールしていた・2026-11-20・本人）
+  for (const id of ['o-title', 'o-result', 'o-story']) $(id).addEventListener('scroll', (e) => { if (e.target.scrollLeft) e.target.scrollLeft = 0; });
   // ---- 全画面（スワリタイ・デストロイ碁と同じしくみ。2026-11-19・本人）----
   // iPhone の Safari は全画面にできないので、ホーム画面に追加する手順を出す。ホーム画面から開いているときと、ほかのページの中（claude.ai など）では出さない
   {
@@ -994,16 +997,16 @@
   function makeShot(r) {
     shotFile = null; $('b-shot').hidden = true;
     try {
-      // 少し縦長に切りぬいて（ふたりと CLEAR! が入るあたり）、下に大きく「警戒度 ◯%」（2026-11-20・本人：ほかのゲームのシェア画像を参考に）
+      // 少し縦長に切りぬいて（ふたりが入るあたり）、下に大きく「警戒度 ◯%」（2026-11-20・本人：ほかのゲームのシェア画像を参考に）
       const src = endSnap || cv, sw = src.width, sh = src.height, w = Math.min(sw, sh), c = document.createElement('canvas');
       const sx0 = Math.round((sw - w) / 2), sy0 = Math.round(sh * 0.17), ch = Math.min(Math.round(w * 1.25), sh - sy0); // 縦長（4:5 くらい）
       c.width = w; c.height = ch; const x = c.getContext('2d');
       x.drawImage(src, sx0, sy0, w, ch, 0, 0, w, ch);
-      const clear = OK.PASS_ENDS.includes(r.id), band = w * 0.3, by = ch - band, cx = w / 2;
+      const band = w * 0.3, by = ch - band, cx = w / 2;
       const gr = x.createLinearGradient(0, by - w * 0.08, 0, ch); gr.addColorStop(0, 'rgba(6,8,22,0)'); gr.addColorStop(0.25, 'rgba(6,8,22,.78)'); gr.addColorStop(1, 'rgba(6,8,22,.92)');
       x.fillStyle = gr; x.fillRect(0, by - w * 0.08, w, ch - by + w * 0.08);
       x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.fillStyle = '#fff'; x.font = `800 ${w * 0.052}px sans-serif`; x.fillText(`${clear ? 'CLEAR!　' : ''}「${r.head}」`, cx, by + band * 0.18, w * 0.92);
+      x.fillStyle = '#fff'; x.font = `800 ${w * 0.052}px sans-serif`; x.fillText(`「${r.head}」`, cx, by + band * 0.18, w * 0.92);
       x.fillStyle = r.max < 15 ? '#5ad08a' : r.max < 40 ? '#e3d24f' : r.max < 70 ? '#ff9a4d' : '#ff5e6e';
       x.font = `900 ${w * 0.17}px "Dela Gothic One", sans-serif`; x.lineWidth = w * 0.012; x.strokeStyle = 'rgba(0,0,0,.6)';
       x.strokeText(`警戒度 ${r.max}%`, cx, by + band * 0.62, w * 0.94); x.fillText(`警戒度 ${r.max}%`, cx, by + band * 0.62, w * 0.94);
