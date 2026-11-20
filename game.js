@@ -698,6 +698,7 @@
       if (g.end && g.endT > 2.5) newDemo();
     }
     draw(ddt);
+    if (playing && g.end && !g.demo && !endSnap && g.endT >= 0.3) { endSnap = document.createElement('canvas'); endSnap.width = cv.width; endSnap.height = cv.height; endSnap.getContext('2d').drawImage(cv, 0, 0); } // シェアの画像用：結末の少しあと（まだ女性が画面にいるうち）
     // 足音：足を 1 歩出すたびに鳴らす（歩くリズムは draw の中で進むので、そのあとで調べる）
     const mi = Math.floor(myPhase / Math.PI), hi = Math.floor(herPhase / Math.PI);
     if (playing && !g.end) {
@@ -730,6 +731,7 @@
 
   function start(force) { // force：モードを決めて始める（宣伝動画を作るときだけ。'normal'・'hard'・'dog'）
     force = typeof force === 'string' ? force : null;
+    endSnap = null;
     pushName();
     document.body.classList.remove('menu'); paused = false; $('o-pause').hidden = true; $('o-rank').hidden = true;
     audio(); playBgm();
@@ -773,6 +775,7 @@
       else showRank(mode);
     }
     lastText = OK.shareText(r, found.size, location.origin + location.pathname + '?ref=share', g.trace, place, g.mode);
+    makeShot(r); // 最後の場面の画像（シェアにつける）
     $('b-share').href = 'https://x.com/intent/post?text=' + encodeURIComponent(lastText);
     $('o-result').hidden = false;
     document.body.classList.add('menu');
@@ -985,7 +988,42 @@
   $('pname').value = getName();
   $('pname').addEventListener('change', () => { if (!saveName($('pname').value)) { nameErr(true); return; } nameErr(false); $('pname').value = getName(); pushName(); });
   $('b-again').onclick = () => { track('again'); start(); };
-  $('b-share').onclick = () => track('share');
+  // ---- シェアの画像：最後の場面に、結末と最大警戒度を書きこむ（2026-11-20・本人）----
+  // スマホ：共有メニューで画像つき（X を選べる）。パソコンなど画像を送れないとき：X の投稿画面を開き、「画像を保存」から手でつける
+  let shotFile = null, endSnap = null;
+  function makeShot(r) {
+    shotFile = null; $('b-shot').hidden = true;
+    try {
+      // 少し縦長に切りぬいて（ふたりと CLEAR! が入るあたり）、下に大きく「警戒度 ◯%」（2026-11-20・本人：ほかのゲームのシェア画像を参考に）
+      const src = endSnap || cv, sw = src.width, sh = src.height, w = Math.min(sw, sh), c = document.createElement('canvas');
+      const sx0 = Math.round((sw - w) / 2), sy0 = Math.round(sh * 0.17), ch = Math.min(Math.round(w * 1.25), sh - sy0); // 縦長（4:5 くらい）
+      c.width = w; c.height = ch; const x = c.getContext('2d');
+      x.drawImage(src, sx0, sy0, w, ch, 0, 0, w, ch);
+      const clear = OK.PASS_ENDS.includes(r.id), band = w * 0.3, by = ch - band, cx = w / 2;
+      const gr = x.createLinearGradient(0, by - w * 0.08, 0, ch); gr.addColorStop(0, 'rgba(6,8,22,0)'); gr.addColorStop(0.25, 'rgba(6,8,22,.78)'); gr.addColorStop(1, 'rgba(6,8,22,.92)');
+      x.fillStyle = gr; x.fillRect(0, by - w * 0.08, w, ch - by + w * 0.08);
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillStyle = '#fff'; x.font = `800 ${w * 0.052}px sans-serif`; x.fillText(`${clear ? 'CLEAR!　' : ''}「${r.head}」`, cx, by + band * 0.18, w * 0.92);
+      x.fillStyle = r.max < 15 ? '#5ad08a' : r.max < 40 ? '#e3d24f' : r.max < 70 ? '#ff9a4d' : '#ff5e6e';
+      x.font = `900 ${w * 0.17}px "Dela Gothic One", sans-serif`; x.lineWidth = w * 0.012; x.strokeStyle = 'rgba(0,0,0,.6)';
+      x.strokeText(`警戒度 ${r.max}%`, cx, by + band * 0.62, w * 0.94); x.fillText(`警戒度 ${r.max}%`, cx, by + band * 0.62, w * 0.94);
+      c.toBlob((b) => {
+        if (!b) return;
+        shotFile = new File([b], 'oikoshitai.png', { type: 'image/png' });
+        const canFile = !!(navigator.canShare && navigator.canShare({ files: [shotFile] }));
+        const u = URL.createObjectURL(b); $('b-shot').href = u; let inFrame = false; try { inFrame = window.self !== window.top; } catch (er) { inFrame = true; }
+        $('b-shot').hidden = canFile || inFrame; // 画像つきで送れないときだけ「画像を保存」（claude.ai の中では保存できないので出さない）
+      }, 'image/png');
+    } catch (e) { shotFile = null; }
+  }
+  $('b-share').onclick = (e) => {
+    track('share');
+    if (shotFile && navigator.canShare && navigator.canShare({ files: [shotFile] })) {
+      e.preventDefault();
+      navigator.share({ text: lastText, files: [shotFile] }).then(() => track('share-image')).catch(() => {});
+    }
+  };
+  $('b-shot').onclick = () => track('share-save-image');
 
   document.body.classList.add('menu'); // はじめの画面では操作ボタンを出さない
   resetLogo();

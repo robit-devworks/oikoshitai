@@ -467,31 +467,15 @@
     return up ? { rank: up[1], need: max - up[0] } : null; // null：もう S
   }
 
-  // 警戒度の移り変わりを 8 マスの色で（🟩 平気 → 🟨 → 🟧 → 🟥 ヤバい）
-  function susBar(trace) {
-    const n = 8, t = (trace || []).map(v => v || 0);
-    if (!t.length) return '🟩'.repeat(n);
-    let out = '';
-    for (let i = 0; i < n; i++) {
-      const a = Math.floor(i * t.length / n), b = Math.max(a + 1, Math.floor((i + 1) * t.length / n));
-      const v = Math.max(...t.slice(a, b));
-      out += v < 15 ? '🟩' : v < 40 ? '🟨' : v < 70 ? '🟧' : '🟥';
-    }
-    return out;
-  }
-
   // シェアする文。best：クリアのときの自己ベスト順位（1 なら「自己ベスト」）
+  // シェアの文（2026-11-20・本人：ほかのゲームのシェアを参考に、1 行＋URL＋タグだけ。画像に大きく警戒度を出す）
   function shareText(r, found, url, trace, best, mode) {
     if (mode === true) mode = 'hard';
-    const clear = PASS_ENDS.includes(r.id);
-    return `【オイコシタイ！${mode && mode !== 'normal' ? '（' + MODES[mode] + 'モード）' : ''}】夜道で前を歩く人を追いこしたい\n` +
-      (clear ? `CLEAR! ` : '') + `結末「${r.head}」${'★'.repeat(r.stars)}${'☆'.repeat(3 - r.stars)}\n` +
-      `${r.quip}\n` +
-      `警戒度 ${susBar(trace)} 最大${r.max}%${clear && best === 1 ? '（自己ベスト）' : ''}\n` +
-      (clear ? `腕前ランク ${skill(mode || 'normal', r.max, r.friend).rank}「${skill(mode || 'normal', r.max, r.friend).name}」\n` : '') +
-      `称号：${r.title}（ED ${found}/${ENDINGS.length}）\n\n` +
-      `▶ 気まずさを体験する\n${url}\n\n#オイコシタイ #バカゲー #個人開発`;
+    const clear = PASS_ENDS.includes(r.id), sk = skill(mode || 'normal', r.max, r.friend);
+    const tag = mode && mode !== 'normal' ? `【${MODES[mode]}モード】` : '';
+    const line = clear ? `警戒度${r.max}%で追いこした！（腕前ランク ${sk.rank}）` : `「${r.head}」警戒度${r.max}%`;
+    return `${tag}${line}\n${url}\n#オイコシタイ #バカゲー #個人開発`;
   }
 
-  return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, skillTable, skillNext, susBar, shareText, normName, nameOK };
+  return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, skillTable, skillNext, shareText, normName, nameOK };
 });
