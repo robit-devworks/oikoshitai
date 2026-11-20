@@ -768,6 +768,7 @@
     $('r-title').textContent = '称号：' + r.title;
     { const u = $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); const t = u ? OK.uwasa(secrets, Math.random()) : ''; $('r-uwasa').textContent = t; $('r-uwasa').hidden = !t; } // 犬のヒントがないときは、うわさ
     $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); // 犬の散歩でなつかずに終わったら、なつかせ方のヒント
+    if (!$('r-hint').hidden) $('r-hint').textContent = 'ヒント：' + ['犬は、となりの列からそっと近づくと…？', '犬に好かれる人に、悪い人はいない', 'おまわりさんが近くにいると、安心'][Math.floor(Math.random() * 3)]; // 3 つのどれか（2026-11-20・本人）
     { const clr = OK.PASS_ENDS.includes(r.id), sk = OK.skill(g.mode, r.max, r.friend); // 腕前ランク（クリアしたときだけ）
       $('r-skill').hidden = !clr; $('r-skill').className = 'skill r-' + sk.rank;
       $('r-sk-rank').textContent = sk.rank; $('r-sk-name').textContent = sk.name;
