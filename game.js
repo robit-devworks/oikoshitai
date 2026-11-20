@@ -282,6 +282,16 @@
   // 犬の散歩モード（隠し・はじめから使える）：タイトルの月をつつくたびに三日月が満ちていき、満月で犬の散歩モード（4 秒あくと欠けにもどる）。
   // ヒント：むずかしいモードを一度クリアすると、ふだんの月が一段階満ちた形になる（そこから 4 回で満月）
   const MOON_TAPS = 5;
+  const MOON_X = 0.13, MOON_Y = 0.075; // 月の場所：タイトルのロゴや右上のボタンと重ならない左上（2026-11-20・本人：月が見づらい）
+  function drawMoon(c, mx, my, R) {
+    if (moonFill > 0.3) { const gl = c.createRadialGradient(mx, my, R, mx, my, R * 3); gl.addColorStop(0, `rgba(255,246,214,${(moonFill - 0.3) * 0.35})`); gl.addColorStop(1, 'rgba(255,246,214,0)'); c.fillStyle = gl; c.beginPath(); c.arc(mx, my, R * 3, 0, 7); c.fill(); } // 満ちてくると光る
+    c.fillStyle = '#fff6d6'; c.beginPath(); c.arc(mx, my, R, 0, 7); c.fill();
+    if (moonFill < 0.98) { // 欠けている所（月の形で切りぬく）
+      c.save(); c.beginPath(); c.arc(mx, my, R + 0.5, 0, 7); c.clip();
+      c.fillStyle = '#0f1430'; c.beginPath(); c.arc(mx + R * 0.44 + moonFill * R * 1.6, my - R * 0.2, R * 0.9, 0, 7); c.fill();
+      c.restore();
+    }
+  }
   let dogMode = false, moonTaps = 0, moonT = 0, moonFill = 0;
   const moonBase = () => (hardCleared() ? 1 : 0); // ヒントで一段階満ちている
   const hardCleared = () => { try { return localStorage.getItem('oikoshi-hardclear') === '1'; } catch (e) { return false; } };
@@ -397,13 +407,13 @@
       if (moonTaps && performance.now() - moonT > 4000 && !dogMode) moonTaps = 0;
       const target = dogMode ? 1 : Math.min(1, (moonBase() + moonTaps) / MOON_TAPS);
       moonFill += (target - moonFill) * Math.min(1, (dt || 0.016) * 6);
-      const mx = W * 0.82, my = H * 0.12, R = Math.min(W, H) * 0.05;
-      if (moonFill > 0.3) { const gl = ctx.createRadialGradient(mx, my, R, mx, my, R * 3); gl.addColorStop(0, `rgba(255,246,214,${(moonFill - 0.3) * 0.35})`); gl.addColorStop(1, 'rgba(255,246,214,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mx, my, R * 3, 0, 7); ctx.fill(); } // 満ちてくると光る
-      ctx.fillStyle = '#fff6d6'; ctx.beginPath(); ctx.arc(mx, my, R, 0, 7); ctx.fill();
-      if (moonFill < 0.98) { // 欠けている所（月の形で切りぬく）
-        ctx.save(); ctx.beginPath(); ctx.arc(mx, my, R + 0.5, 0, 7); ctx.clip();
-        ctx.fillStyle = '#0f1430'; ctx.beginPath(); ctx.arc(mx + R * 0.44 + moonFill * R * 1.6, my - R * 0.2, R * 0.9, 0, 7); ctx.fill();
-        ctx.restore();
+      const R = Math.min(W, H) * 0.05;
+      drawMoon(ctx, W * MOON_X, H * MOON_Y, R);
+      // タイトルでは、暗い幕の上（月のボタンの中）にも描いて明るく見せる（2026-11-20・本人：月が見づらい）
+      const mc = $('moon-cv');
+      if (!$('o-title').hidden) {
+        const S = mc.clientWidth || 116; if (mc.width !== Math.round(S * dpr)) { mc.width = mc.height = Math.round(S * dpr); }
+        const m = mc.getContext('2d'); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.clearRect(0, 0, S, S); drawMoon(m, S / 2, S / 2, R);
       }
     }
 
@@ -899,9 +909,9 @@
     const standalone = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); // F11 の全画面（display-mode: fullscreen）では消さない（2026-11-19・Edge で出なかった）
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const show = !embedded && !standalone && (fsOK || isIOS);
-    $('b-fs').hidden = $('b-fs2').hidden = !show;
+    $('b-fs').hidden = $('b-fs2').hidden = $('b-fs3').hidden = !show;
     $('a2hs-steps').innerHTML = ['アドレスバーの<b>共有ボタン</b>（□に↑）を押す', '「<b>ホーム画面に追加</b>」を選ぶ', 'ホーム画面の<b>オイコシタイのアイコン</b>から開く'].map((t) => `<li>${t}</li>`).join('');
-    const label = () => { const on = !!fsEl(); $('b-fs').textContent = on ? '✕' : '⛶'; $('b-fs').setAttribute('aria-label', on ? '全画面を終了' : '全画面'); $('b-fs2').textContent = on ? '全画面を終了' : '⛶ 全画面'; };
+    const label = () => { const on = !!fsEl(); $('b-fs').textContent = on ? '✕' : '⛶'; $('b-fs').setAttribute('aria-label', on ? '全画面を終了' : '全画面'); $('b-fs2').textContent = $('b-fs3').textContent = on ? '全画面を終了' : '⛶ 全画面'; };
     const toggle = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
       if (!fsOK) { $('o-a2hs').hidden = false; track('fs-a2hs'); return; }
@@ -909,7 +919,7 @@
       try { const r = fsEl() ? exit.call(document) : req.call(fsT); if (r && r.catch) r.catch(() => {}); } catch (err) {}
       track(fsEl() ? 'fs-off' : 'fs-on');
     };
-    $('b-fs').addEventListener('click', toggle); $('b-fs2').addEventListener('click', toggle);
+    $('b-fs').addEventListener('click', toggle); $('b-fs2').addEventListener('click', toggle); $('b-fs3').addEventListener('click', toggle);
     $('b-a2hs-ok').addEventListener('click', () => { $('o-a2hs').hidden = true; });
     document.addEventListener('fullscreenchange', label); document.addEventListener('webkitfullscreenchange', label);
     label();

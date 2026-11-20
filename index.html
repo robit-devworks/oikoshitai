@@ -170,7 +170,8 @@
   #o-pause, #o-rank { z-index: 5; } #o-rank-body { width: 100%; display: flex; justify-content: center; }
   .hud .coplab { grid-column: 1 / -1; font-size: 12px; } .hud .bar.cop { height: 8px; } .hud .bar.cop i { background: #5aa9ff; }
   .hud [hidden] { display: none; }
-  .moon-btn { position: absolute; left: calc(82% - 28px); top: calc(12% - 28px); width: 56px; height: 56px; border-radius: 50%; border: 0; background: transparent; padding: 0; cursor: default; z-index: 1; }
+  .moon-btn { position: absolute; left: calc(13% - 28px); top: calc(7.5% - 28px); width: 56px; height: 56px; border-radius: 50%; border: 0; background: transparent; padding: 0; cursor: default; z-index: 1; }
+  #moon-cv { position: absolute; left: -30px; top: -30px; width: 116px; height: 116px; pointer-events: none; } /* 光る分まで入るように大きめ */
   /* ストーリー */
   #o-story { background: rgba(5, 7, 18, .97); z-index: 5; }
   .st-text .memo { background: #f4eedc; border-radius: 4px; padding: 10px 12px; transform: rotate(-1deg); box-shadow: 0 4px 14px rgba(0,0,0,.4); display: flex; flex-direction: column; gap: 4px; text-align: left; }
@@ -186,7 +187,7 @@
   #o-ends, #o-titles, #o-tmenu { background: #070918; justify-content: flex-start; gap: 10px; z-index: 5; }
   #o-ends::before, #o-titles::before { margin-top: 0; }
   .tmenu-btn { position: absolute; top: 8px; right: 8px; z-index: 2; width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: rgba(14, 18, 40, .75); color: var(--ink); font-size: 20px; cursor: pointer; }
-  body:has(#o-title:not([hidden])) .menu-btn.fs-btn { right: 58px; } /* タイトルでは全画面ボタンをメニューの左に */
+  body:has(#o-title:not([hidden])) .menu-btn.fs-btn { display: none; } /* タイトルでは全画面ボタンは ☰ のメニューの中へ（右上がロゴと重なるので・2026-11-20） */
   .tmenu-list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
   .tmenu-list .btn { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; }
   .tmenu-list .btn span { color: var(--lamp); font-size: 13px; white-space: nowrap; }
@@ -286,6 +287,7 @@
       <div class="tmenu-list">
         <button class="btn" id="b-ends">📖 結末の一覧（ストーリー）<span id="b-ends-n">0／9</span></button>
         <button class="btn" id="b-titles">🏅 称号の一覧<span id="b-titles-n">0／19</span></button>
+        <button class="btn" id="b-fs3" hidden>⛶ 全画面</button>
       </div>
       <button class="btn small" id="b-tmenuback">もどる</button>
     </div>
@@ -302,7 +304,7 @@
       <button class="btn main" id="b-a2hs-ok">わかった</button>
     </div>
     <div class="over" id="o-title">
-      <button class="moon-btn" id="b-moon" aria-label="月"></button>
+      <button class="moon-btn" id="b-moon" aria-label="月"><canvas id="moon-cv"></canvas></button>
       <button class="tmenu-btn" id="b-tmenu" aria-label="メニュー（結末・称号の一覧）">☰</button>
       <h1 class="logo" aria-label="オイコシタイ！"><span class="sub">夜道の気まずさゲーム</span><span class="main">オイコシ<b>タイ！</b></span><span class="road"></span></h1>
       <p>夜道。前を歩く女性と、帰る方向が同じ。<br><b>怖がらせずに、追いこしたい。</b></p>
@@ -365,7 +367,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261120102129"></script>
-<script src="game.js?v=20261120102129"></script>
+<script src="logic.js?v=20261120102420"></script>
+<script src="game.js?v=20261120102420"></script>
 </body>
 </html>
