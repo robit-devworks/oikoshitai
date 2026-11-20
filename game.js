@@ -859,6 +859,20 @@
   // ---- 一時停止（右上の ☰）----
   let paused = false;
   function pause() { if (!playing || g.end || paused) return; paused = true; $('o-pause').hidden = false; try { bgm.pause(); } catch (e) {} track('pause'); }
+  // ブラウザを裏にしたら、虫の音と効果音を止める（遊んでいる途中なら一時停止）。表に戻ったら、鳴っていた音だけ戻す（2026-11-20・本人）
+  let bgmWas = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      bgmWas = !bgm.paused;
+      pause();
+      try { bgm.pause(); } catch (e) {}
+      try { if (ac && ac.state === 'running') ac.suspend(); } catch (e) {}
+    } else {
+      try { if (ac && ac.state === 'suspended') ac.resume(); } catch (e) {}
+      if (bgmWas && !paused) playBgm(); // 一時停止の画面なら、「つづける」で鳴らす
+      bgmWas = false;
+    }
+  });
   function resume() { if (!paused) return; paused = false; $('o-pause').hidden = true; last = performance.now(); playBgm(); }
   function toTitle() { // タイトルへ（むずかしいモードはここで元にもどる）
     playing = false; paused = false;
