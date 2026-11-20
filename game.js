@@ -309,6 +309,7 @@
     logo.classList.toggle('fidget', unlocked());
     $('b-story').hidden = false; // ストーリーは最初から遊べる（2026-11-19・本人：けっこう楽しいので）
     $('b-ends-n').textContent = OK.STORY_ORDER.filter((k) => sFound.has(k)).length + '／' + OK.STORY_ORDER.length;
+    $('b-titles-n').textContent = OK.ENDINGS.filter((e) => found.has(e.id)).length + '／' + OK.ENDINGS.length;
     $('hint').hidden = !(SHOW_HINT && unlocked());
     logoSub.textContent = '夜道の気まずさゲーム'; logoSub.classList.remove('hard');
     $('b-start').textContent = '家に帰る';
@@ -544,8 +545,8 @@
       }
     }
     // 警戒が高いと画面のふちが赤く
-    if (g.sus > 50) {
-      const a = (g.sus - 50) / 50 * 0.45;
+    if ((g.showSus ?? g.sus) > 50) {
+      const a = ((g.showSus ?? g.sus) - 50) / 50 * 0.45;
       const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
       v.addColorStop(0, 'rgba(255,40,40,0)'); v.addColorStop(1, `rgba(255,40,40,${a})`);
       ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
@@ -711,9 +712,9 @@
   }
 
   function hud() {
-    const s = Math.round(g.sus);
+    const ss = g.showSus ?? g.sus, s = Math.round(ss); // 画面には、前に出たらすぐ下がる警戒度を出す
     $('h-sus').textContent = s + '%';
-    $('h-mood').textContent = OK.mood(g.sus);
+    $('h-mood').textContent = OK.mood(ss);
     { const d = Math.round(g.her.x - g.me.x); $('h-home-l').textContent = d >= 0 ? '前の人まで' : '前の人より'; $('h-home').textContent = d >= 0 ? d + 'm' : -d + 'm 前'; }
     const cop = !!g.police;
     $('h-coplab').hidden = $('h-copbar').hidden = !cop;
@@ -954,10 +955,23 @@
         : `<li><b>${nn(e.no)}</b><span><span class="t">？？？${ex}</span><small class="h">💡 ${esc(e.hint)}</small></span></li>`;
     }).join('') + (sFound.has('loop') ? `<li class="ten got"><b>10</b><span class="t">${esc(OK.STORY_ENDS.loop.head)}（称号：${esc(OK.STORY_ENDS.loop.title)}）</span></li>`
       : '<li class="ten">10　？？？　……9 つそろえると、なにかが起きる</li>');
-    $('o-title').hidden = true; $('o-ends').hidden = false; $('o-ends').scrollTop = 0; track('ends-from-title');
+    $('o-tmenu').hidden = true; $('o-ends').hidden = false; $('o-ends').scrollTop = 0; track('ends-from-title');
   }
   $('b-ends').onclick = showEnds;
-  $('b-endsback').onclick = () => { $('o-ends').hidden = true; $('o-title').hidden = false; };
+  $('b-endsback').onclick = () => { $('o-ends').hidden = true; $('o-tmenu').hidden = false; };
+  // ---- 称号の一覧：ふつうの結末の称号。手に入れたものは称号と結末、まだのものは ？？？（2026-11-20・本人）----
+  function showTitles() {
+    const got = OK.ENDINGS.filter((e) => found.has(e.id)).length;
+    $('titles-n').textContent = got; $('titles-total').textContent = OK.ENDINGS.length;
+    $('titles-list').innerHTML = OK.ENDINGS.map((e, i) => found.has(e.id)
+      ? `<li class="got"><b>${String(i + 1).padStart(2, '0')}</b><span><span class="t">${esc(e.title)}</span><small class="s">${esc(e.head)}　${'★'.repeat(e.stars)}${'☆'.repeat(3 - e.stars)}</small></span></li>`
+      : `<li><b>${String(i + 1).padStart(2, '0')}</b><span><span class="t">？？？</span></span></li>`).join('');
+    $('o-tmenu').hidden = true; $('o-titles').hidden = false; $('o-titles').scrollTop = 0; track('titles-from-menu');
+  }
+  $('b-titles').onclick = showTitles;
+  $('b-titlesback').onclick = () => { $('o-titles').hidden = true; $('o-tmenu').hidden = false; };
+  $('b-tmenu').onclick = () => { $('o-title').hidden = true; $('o-tmenu').hidden = false; track('menu-from-title'); };
+  $('b-tmenuback').onclick = () => { $('o-tmenu').hidden = true; $('o-title').hidden = false; };
   $('b-rankback').onclick = () => { rankHome.insertBefore(rankBox, rankNext); $('o-rank').hidden = true; $('o-title').hidden = false; };
 
   // ---- 操作 ----

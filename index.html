@@ -183,8 +183,13 @@
   .st-no span { font-size: 11px; color: var(--sub); } .st-no i { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; font-weight: 700; font-style: normal; font-size: 10px; margin-left: 8px; padding: 1px 6px; border-radius: 6px; background: var(--danger); color: #fff; letter-spacing: .05em; vertical-align: 2px; }
   /* 結末の一覧（タイトルから・2026-11-19・本人） */
   .title-row { display: flex; gap: 10px; justify-content: center; flex-shrink: 0; }
-  #o-ends { background: #070918; justify-content: flex-start; gap: 10px; z-index: 5; }
-  #o-ends::before { margin-top: 0; }
+  #o-ends, #o-titles, #o-tmenu { background: #070918; justify-content: flex-start; gap: 10px; z-index: 5; }
+  #o-ends::before, #o-titles::before { margin-top: 0; }
+  .tmenu-btn { position: absolute; top: 8px; right: 8px; z-index: 2; width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: rgba(14, 18, 40, .75); color: var(--ink); font-size: 20px; cursor: pointer; }
+  body:has(#o-title:not([hidden])) .menu-btn.fs-btn { right: 58px; } /* タイトルでは全画面ボタンをメニューの左に */
+  .tmenu-list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
+  .tmenu-list .btn { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; }
+  .tmenu-list .btn span { color: var(--lamp); font-size: 13px; white-space: nowrap; }
   .ends-sum { font-size: 13px; color: var(--sub); } .ends-sum b { color: var(--lamp); }
   .ends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 340px; font-size: 13px; line-height: 1.45; text-align: left; }
   .ends-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.04); }
@@ -275,6 +280,21 @@
       <ol class="ends-list" id="ends-list"></ol>
       <button class="btn small" id="b-endsback">もどる</button>
     </div>
+    <!-- タイトルの右上のメニュー：結末の一覧と称号の一覧をまとめる（2026-11-20・本人） -->
+    <div class="over" id="o-tmenu" hidden>
+      <div class="head">メニュー</div>
+      <div class="tmenu-list">
+        <button class="btn" id="b-ends">📖 結末の一覧（ストーリー）<span id="b-ends-n">0／9</span></button>
+        <button class="btn" id="b-titles">🏅 称号の一覧<span id="b-titles-n">0／19</span></button>
+      </div>
+      <button class="btn small" id="b-tmenuback">もどる</button>
+    </div>
+    <div class="over" id="o-titles" hidden>
+      <div class="head">🏅 称号の一覧</div>
+      <div class="ends-sum">手に入れた称号　<b id="titles-n">0</b>／<span id="titles-total">19</span></div>
+      <ol class="ends-list" id="titles-list"></ol>
+      <button class="btn small" id="b-titlesback">もどる</button>
+    </div>
     <div class="over" id="o-a2hs" hidden>
       <div class="head">全画面で遊ぶには</div>
       <p>この画面（iPhone など）では全画面のボタンが使えません。<br><b>ホーム画面に追加</b>すると、ブラウザのバーなしで遊べます。</p>
@@ -283,6 +303,7 @@
     </div>
     <div class="over" id="o-title">
       <button class="moon-btn" id="b-moon" aria-label="月"></button>
+      <button class="tmenu-btn" id="b-tmenu" aria-label="メニュー（結末・称号の一覧）">☰</button>
       <h1 class="logo" aria-label="オイコシタイ！"><span class="sub">夜道の気まずさゲーム</span><span class="main">オイコシ<b>タイ！</b></span><span class="road"></span></h1>
       <p>夜道。前を歩く女性と、帰る方向が同じ。<br><b>怖がらせずに、追いこしたい。</b></p>
       <div class="rules">
@@ -295,7 +316,7 @@
       <p class="name-err" id="name-err" hidden>その名前は使えません。ちがう名前にしてね</p>
       <button class="btn main" id="b-start">家に帰る</button>
       <button class="btn story-btn" id="b-story">ストーリー（月〜金の帰り道）</button>
-      <div class="title-row"><button class="btn small" id="b-rank">ランキング</button><button class="btn small" id="b-ends">📖 結末の一覧　<span id="b-ends-n">0／9</span></button></div>
+      <div class="title-row"><button class="btn small" id="b-rank">ランキング</button></div>
       <p class="author" data-where="title"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://www.youtube.com/@futarigurashi_games/videos" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
       <p class="hint" id="dev-id" hidden style="user-select:text;-webkit-user-select:text;font-size:11px"></p>
       <button class="link-btn hand-btn" id="b-hand1">十字キー：右手</button>
@@ -344,7 +365,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261120094014"></script>
-<script src="game.js?v=20261120094014"></script>
+<script src="logic.js?v=20261120102129"></script>
+<script src="game.js?v=20261120102129"></script>
 </body>
 </html>

@@ -20,6 +20,7 @@
     LANE_W: 9,         // 列が 1 つちがうと、これだけ離れているのと同じ
     LANE_V: 2.5,        // 列を変える速さ（1 秒に何列）
     PASS_DONE: 35,      // これだけ前に出たら「抜けた」
+    PASS_CALM: 25,      // 前に出たあと、画面の警戒度が 1 秒に下がる量（見た目だけ・2026-11-20・本人）
     DISTRACT: 0.6,
     // スマホを見て立ち止まる：何秒ごとに（gap）・何秒（len）。むずかしいはたまに・短く（null なら見ない）
     PHONE: { normal: { gap: [9, 16], len: [2, 3.5] }, hard: { gap: [10, 16], len: [2, 3.1] }, /* むずかしい：前は 16〜24 秒・1.2〜2 秒で S がほぼ取れなかった（2026-11-20・本人。上手な人で 1 割くらい S に）*/ dog: { gap: [9, 16], len: [2, 3.5] } },      // 相手がスマホを見ているあいだは、警戒の上がり方がこれだけになる
@@ -222,6 +223,9 @@
     if (rise > 0) g.sus += rise * dt; else g.sus -= 6 * dt;
     g.sus = Math.max(0, Math.min(100, g.sus));
     g.maxSus = Math.max(g.maxSus, g.sus);
+    // 画面に出す警戒度：前に出たら、すぐ下がって見える（最大警戒度・相手の反応は今までどおり g.sus で数える・2026-11-20・本人）
+    // ただし本当に逃げられそう（90% 以上）なときは、本当の値を出す
+    g.showSus = d < 0 && g.sus < 90 ? Math.max(0, Math.min(g.sus, (g.showSus ?? g.sus) - C.PASS_CALM * dt)) : g.sus;
     const ti = Math.floor(g.t); g.trace[ti] = Math.max(g.trace[ti] || 0, g.sus); // 1 秒ごとの警戒度（シェアのグラフ用）
 
     // ふりかえる（40% と 70% をこえたとき）。近くで目が合うとさらに上がる
@@ -249,7 +253,7 @@
         if (carHere && P.x < carHere.x1 + 8 && P.x + (nearHer ? C.COP_SLOW : C.COP_V) * dt >= carHere.x1 + 8 - 0.01) P.x = carHere.x1 + 8; // 車の向こうで止まって待つ
         if (P.bellT > 0) P.bellT -= dt;
         const cd = Math.abs(P.x - me.x);
-        if (cd < C.COP_SEE && ahead > -1.5) { // 見えるのは前だけ（すれちがって後ろにいる人は見えない・2026-11-20・本人）
+        if (cd < C.COP_SEE && ahead > -1.5 && d > 0) { // 見えるのは前だけ（すれちがって後ろにいる人は見えない・2026-11-20・本人）。女性の前に出たら、もう怪しまない（2026-11-20・本人）
           if (me.gear === 4) crise += 35;                                   // 走っている
           if (mv === 0) crise += 10;                                        // 立ち止まっている
           if (Math.abs(me.lane - me.z) > 0.05) crise += 15;                 // 列をうろうろ
