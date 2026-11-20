@@ -22,7 +22,7 @@
     PASS_DONE: 35,      // これだけ前に出たら「抜けた」
     DISTRACT: 0.6,
     // スマホを見て立ち止まる：何秒ごとに（gap）・何秒（len）。むずかしいはたまに・短く（null なら見ない）
-    PHONE: { normal: { gap: [9, 16], len: [2, 3.5] }, hard: { gap: [16, 24], len: [1.2, 2] }, dog: { gap: [9, 16], len: [2, 3.5] } },      // 相手がスマホを見ているあいだは、警戒の上がり方がこれだけになる
+    PHONE: { normal: { gap: [9, 16], len: [2, 3.5] }, hard: { gap: [10, 16], len: [2, 3.1] }, /* むずかしい：前は 16〜24 秒・1.2〜2 秒で S がほぼ取れなかった（2026-11-20・本人。上手な人で 1 割くらい S に）*/ dog: { gap: [9, 16], len: [2, 3.5] } },      // 相手がスマホを見ているあいだは、警戒の上がり方がこれだけになる
     KONBINI_X: 200,     // 塀がわのコンビニ
     POLICE_LANES: 20,   // 列を変えた回数がこれをこえると職務質問
     COWORKER_RATE: 0.08,
@@ -188,8 +188,13 @@
     else if (g.t >= her.nextStop) { // ときどき立ち止まってスマホを見る（モードで回数と長さがちがう）
       const P = g.phoneCfg || (g.mode in C.PHONE ? C.PHONE[g.mode] : C.PHONE.normal);
       const r1 = g.rand(), r2 = g.rand(); // 乱数はいつも 2 つ使う（遊び方で後の展開がずれないように）
-      if (P && g.sus < 40) { her.stopT = P.len[0] + r1 * (P.len[1] - P.len[0]); g.events.push({ t: g.t, kind: 'stop' }); }
+      if (P && g.sus < 40) her.phoneWait = P.len[0] + r1 * (P.len[1] - P.len[0]); // 見る長さ
       her.nextStop = g.t + (P ? P.gap[0] + r2 * (P.gap[1] - P.gap[0]) : 999);
+    }
+    // むずかしいモードでは、車の手前・横ではスマホを見ない。車のせいで抜けないので、越えてから見る（2026-11-20・本人）
+    if (her.phoneWait && her.stopT <= 0 && !(g.hard && OBST.some((o) => o.kind === 'car' && her.x > o.x0 - 25 && her.x < o.x1 + 5))) {
+      if (g.sus < 40) { her.stopT = her.phoneWait; g.events.push({ t: g.t, kind: 'stop' }); }
+      her.phoneWait = 0;
     }
     her.v = hv;
     her.x += hv * dt;
@@ -230,7 +235,9 @@
     // ---- おまわりさん（むずかしい・犬の散歩）：「おまわりさんの目」ゲージ ----
     if (g.police) {
       const P = g.police;
-      if (!P.on && g.t >= P.next && me.x + 90 < C.HOME + 20) { P.on = true; g.copMet = true; P.x = me.x + 90; P.z = C.COP_LANE; g.events.push({ t: g.t, kind: 'cop' }); }
+      // 車の手前〜横にいるあいだは、おまわりさんは来ない・車の向こうで待つ（車と重なって抜けられないので・2026-11-20・本人）
+      const carHere = OBST.find((o) => o.kind === 'car' && me.x > o.x0 - 30 && me.x < o.x1 + 5);
+      if (!P.on && g.t >= P.next && !carHere && me.x + 90 < C.HOME + 20) { P.on = true; g.copMet = true; P.x = me.x + 90; P.z = C.COP_LANE; g.events.push({ t: g.t, kind: 'cop' }); }
       let crise = 0;
       if (P.on) {
         const nearHer = Math.abs(P.x - her.x) < 25;
@@ -239,9 +246,10 @@
         const blocked = inLane && ahead > 0 && ahead < 8;
         if (blocked && P.bellT <= 0) { P.bellT = 2; g.events.push({ t: g.t, kind: 'bell' }); }
         if (!blocked) P.x -= (nearHer ? C.COP_SLOW : C.COP_V) * dt; // 女性の近くでは自転車を押してゆっくり見回る
+        if (carHere && P.x < carHere.x1 + 8 && P.x + (nearHer ? C.COP_SLOW : C.COP_V) * dt >= carHere.x1 + 8 - 0.01) P.x = carHere.x1 + 8; // 車の向こうで止まって待つ
         if (P.bellT > 0) P.bellT -= dt;
         const cd = Math.abs(P.x - me.x);
-        if (cd < C.COP_SEE) {
+        if (cd < C.COP_SEE && ahead > -1.5) { // 見えるのは前だけ（すれちがって後ろにいる人は見えない・2026-11-20・本人）
           if (me.gear === 4) crise += 35;                                   // 走っている
           if (mv === 0) crise += 10;                                        // 立ち止まっている
           if (Math.abs(me.lane - me.z) > 0.05) crise += 15;                 // 列をうろうろ
