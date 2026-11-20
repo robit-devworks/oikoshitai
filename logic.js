@@ -42,7 +42,7 @@
   for (const x of [105, 240]) OBST.push({ kind: 'car', x0: x, x1: x + 18, lanes: [1, 2] });
 
   const ENDINGS = [
-    { id: 'ghost', stars: 3, head: '透明人間', sub: '一度も気づかれずに追いこした', title: '忍びの末裔', quip: '相手は最後まで、後ろに人がいたことを知らない' },
+    { id: 'ghost', stars: 3, head: '透明人間', sub: 'ほとんど気づかれずに追いこした', title: '忍びの末裔', quip: '相手は最後まで、後ろに人がいたことを知らない' },
     { id: 'gentle', stars: 2, head: 'スマートに追いこした', sub: 'ほとんど警戒されなかった', title: '夜道の紳士', quip: '紳士すぎて、たぶん記憶にも残っていない' },
     { id: 'pass', stars: 1, head: '追いこした', sub: 'ちょっと警戒されたけど、セーフ', title: '空気の読める人', quip: 'ちょっと怪しまれたけど、今日もなんとか一般人' },
     { id: 'close', stars: 1, head: 'ギリギリ追いこした', sub: 'かなり怪しまれていた', title: 'ほぼ不審者（ほぼ濡れ衣）', quip: 'ほぼ不審者として、無事に帰宅' },
