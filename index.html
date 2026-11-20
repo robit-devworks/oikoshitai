@@ -36,6 +36,8 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   [hidden] { display: none !important; } /* 隠した部品は、どの見た目の決まりよりも優先して隠す */
+  /* 2 回つづけてタップしても画面が拡大しないように（逃げたタイトルの後ろの背景をタップしても・2026-11-20・本人）。ピンチでの拡大はできる */
+  :where(*) { touch-action: manipulation; }
   html, body { margin: 0; height: 100%; background: var(--night); color: var(--ink); overflow: hidden;
     font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
   #app { height: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column;
@@ -342,7 +344,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261120091216"></script>
-<script src="game.js?v=20261120091216"></script>
+<script src="logic.js?v=20261120094014"></script>
+<script src="game.js?v=20261120094014"></script>
 </body>
 </html>
