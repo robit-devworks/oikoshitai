@@ -27,7 +27,8 @@
     POLICE_LANES: 20,   // 列を変えた回数がこれをこえると職務質問
     COWORKER_RATE: 0.08,
     // むずかしいモード：自転車のおまわりさん（まん中の列を向こうから来る）。ぶつかると捕まる
-    COP_V: 6, COP_SLOW: 1.5, COP_LANE: 1, COP_SEE: 40, COP_FIRST: 6, COP_GAP: [3, 6], COP_DECAY: 4,
+    COP_V: 6, COP_SLOW: 1.5, COP_LANE: 1, COP_SEE: 40, COP_FIRST: 6, COP_GAP: [3, 6], COP_DECAY: 4, COP_CALM: 0.5, // 8〜14 秒おき・よける版も試したが、むずかしいモードの S が出なくなったので元に戻した（2026-11-20・本人）
+    GHOST: 13,          // 透明人間になる最大警戒度（％以下）。前は 8% 未満で、ボットでもだれも取れなかった（2026-11-20・本人）
     // おまわりさんはゆっくり巡回し、女性の近く（COP_NEAR_HER 以内）では自転車を押して歩く（COP_SLOW）
     // 犬の散歩モード（隠し）
     DOG_NEAR: 14,       // これより近いと吠える（横の列は LANE_W 倍に数える）
@@ -41,7 +42,7 @@
   for (const x of [105, 240]) OBST.push({ kind: 'car', x0: x, x1: x + 18, lanes: [1, 2] });
 
   const ENDINGS = [
-    { id: 'ghost', stars: 3, head: '透明人間', sub: '一度も気づかれずに追いこした', title: '夜道の忍び', quip: '相手は最後まで、後ろに人がいたことを知らない' },
+    { id: 'ghost', stars: 3, head: '透明人間', sub: '一度も気づかれずに追いこした', title: '忍びの末裔', quip: '相手は最後まで、後ろに人がいたことを知らない' },
     { id: 'gentle', stars: 2, head: 'スマートに追いこした', sub: 'ほとんど警戒されなかった', title: '夜道の紳士', quip: '紳士すぎて、たぶん記憶にも残っていない' },
     { id: 'pass', stars: 1, head: '追いこした', sub: 'ちょっと警戒されたけど、セーフ', title: '空気の読める人', quip: 'ちょっと怪しまれたけど、今日もなんとか一般人' },
     { id: 'close', stars: 1, head: 'ギリギリ追いこした', sub: 'かなり怪しまれていた', title: 'ほぼ不審者（ほぼ濡れ衣）', quip: 'ほぼ不審者として、無事に帰宅' },
@@ -212,7 +213,7 @@
     if (me.gear === 4 && d > 0 && ad < 60) rise += 6;        // 走る足音
     if (her.stopT > 0) rise *= C.DISTRACT;                   // スマホに夢中で少し気づきにくい
     rise *= g.riseMul || 1;
-    if (g.police && g.police.on && Math.abs(g.police.x - her.x) < 20) rise *= 0.5; // おまわりさんが近くにいると、相手は少し安心
+    if (g.police && g.police.on && Math.abs(g.police.x - her.x) < 20) rise *= C.COP_CALM; // おまわりさんが近くにいると、相手は少し安心
     if (rise > 0) g.sus += rise * dt; else g.sus -= 6 * dt;
     g.sus = Math.max(0, Math.min(100, g.sus));
     g.maxSus = Math.max(g.maxSus, g.sus);
@@ -284,7 +285,7 @@
     g.wasBehind = d > 0;
     if (g.sus >= 100) { finish(g, g.dog && g.t - g.dog.lastBark < 2 ? 'bark' : her.x > C.KONBINI_X - 25 && her.x < C.KONBINI_X + 40 ? 'konbini' : 'flee'); return; }
     if (-d >= C.PASS_DONE) {
-      finish(g, g.dog && g.dog.friend ? 'dogfollow' : g.passedRunning ? 'dash' : g.maxSus < 8 ? 'ghost' : g.maxSus < 20 ? 'gentle' : g.maxSus < 50 ? 'pass' : 'close');
+      finish(g, g.dog && g.dog.friend ? 'dogfollow' : g.passedRunning ? 'dash' : Math.round(g.maxSus) <= C.GHOST ? 'ghost' : g.maxSus < 20 ? 'gentle' : g.maxSus < 50 ? 'pass' : 'close');
       return;
     }
     if (her.x >= C.HOME) finish(g, g.dog && g.dog.friend ? 'natsuki' : 'same');
