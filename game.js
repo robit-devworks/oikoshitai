@@ -358,8 +358,8 @@
 
   function track(name) { try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true }); } catch (e) {} }
   // 作者の X・YouTube・実況（どの画面で押したかも数える）
-  // 実況の動画ができたら JIKKYO_URL を動画の URL にする（いまは作者の YouTube の動画一覧）
-  const JIKKYO_URL = 'https://www.youtube.com/@futarigurashi_games/videos';
+  // 作者の実況の動画（2026-11-21・本人：YouTube に投稿した本編）
+  const JIKKYO_URL = 'https://youtu.be/DOE8YIUp59M';
   document.querySelectorAll('.author').forEach((p) => p.querySelectorAll('a').forEach((a) => {
     if (a.classList.contains('jikkyo')) a.href = JIKKYO_URL;
     a.addEventListener('click', () => track(a.dataset.t + '-' + p.dataset.where));
