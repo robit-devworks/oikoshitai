@@ -442,10 +442,11 @@
   const dayColor = (m) => (m < 15 ? '🟩' : m < 40 ? '🟨' : m < 70 ? '🟧' : '🟥');
   function storyShare(end, results, url) {
     const days = ['月', '火', '水', '木', '金'];
-    return `【オイコシタイ！ストーリー】月曜から金曜の帰り道\n` + (end.title ? `称号：${end.title}\n` : '') +
-      `${end.extra ? '🌈EXTRA' : end.routeName}　結末${end.no ? ' ' + String(end.no).padStart(2, '0') + '／' + STORY_ORDER.length : ''}「${end.head}」${'★'.repeat(end.stars)}${'☆'.repeat(3 - end.stars)}\n` +
+    const hide = end.id === 'loop'; // 10 個目（EXTRA）は称号・題・ひとことを ？？？ に（結末がバレるので・2026-11-21・本人）
+    return `【オイコシタイ！ストーリー】月曜から金曜の帰り道\n` + (end.title ? `称号：${hide ? '？？？' : end.title}\n` : '') +
+      `${end.extra ? '🌈EXTRA' : end.routeName}　結末${end.no ? ' ' + String(end.no).padStart(2, '0') + '／' + STORY_ORDER.length : ''}「${hide ? '？？？' : end.head}」${'★'.repeat(end.stars)}${'☆'.repeat(3 - end.stars)}\n` +
       `警戒度 ` + results.map((r, i) => days[i] + dayColor(r.max)).join(' ') + `\n` +
-      `${end.quip}\n\n` +
+      `${hide ? '……9 つの結末をぜんぶ見ると、なにかが起きる' : end.quip}\n\n` +
       `▶ 気まずさを体験する\n${url}\n\n#オイコシタイ #バカゲー #個人開発`;
   }
 
