@@ -757,7 +757,7 @@
   }
 
   let lastText = '', endCount = 0;
-  const GUIDE_KEY = 'oikoshi-guided';
+  const GUIDE_KEY = 'oikoshi-guided', PLAYS_KEY = 'oikoshi-plays';
   function finish() {
     const r = OK.result(g);
     const isNew = !found.has(r.id); found.add(r.id); saveFound();
@@ -771,6 +771,10 @@
     $('r-max').textContent = r.max + '%';
     $('r-title').textContent = '称号：' + r.title;
     { const u = $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); const t = u ? OK.uwasa(secrets, Math.random()) : ''; $('r-uwasa').textContent = t; $('r-uwasa').hidden = !t; } // 犬のヒントがないときは、うわさ
+    // 3 回遊んだら、うわさを上（称号の下）に目立たせて出す（隠しモードに気づく人が少なかったので・2026-11-23・本人）
+    { let n = 0; try { n = (+localStorage.getItem(PLAYS_KEY) || 0) + 1; localStorage.setItem(PLAYS_KEY, String(n)); } catch (e) {}
+      const u = $('r-uwasa'), loud = n >= 3; u.classList.toggle('loud', loud);
+      if (loud) $('r-title').after(u); else $('b-title').after(u); }
     $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); // 犬の散歩でなつかずに終わったら、なつかせ方のヒント
     if (!$('r-hint').hidden) $('r-hint').textContent = 'ヒント：' + ['犬は、となりの列からそっと近づくと…？', '犬に好かれる人に、悪い人はいない', 'おまわりさんが近くにいると、安心'][Math.floor(Math.random() * 3)]; // 3 つのどれか（2026-11-20・本人）
     { const clr = OK.PASS_ENDS.includes(r.id), sk = OK.skill(g.mode, r.max, r.friend); // 腕前ランク（クリアしたときだけ）
