@@ -751,15 +751,19 @@
     g = sc ? OK.newGame(null, Object.assign({ mode: sc.mode }, sc.opts)) : OK.newGame(null, { mode: force || (dogMode ? 'dog' : hardMode ? 'hard' : 'normal') }); seenEv = 0;
     $('o-story').hidden = true; pops = []; shown = false; myPhase = herPhase = 0;
     $('o-title').hidden = true; $('o-result').hidden = true;
-    playing = true; track('start'); hud();
+    playing = true; hud(); // start・again・pause は数えない（結末の数で分かる。GoatCounter の記録を減らす・2026-11-23・本人）
+    // 最初の 1 回だけ「前の人を追いこそう！」（同じマンションで終わる人が多かったので・2026-11-23・本人）
+    { let first = false; try { first = !story && !localStorage.getItem(GUIDE_KEY); if (first) localStorage.setItem(GUIDE_KEY, '1'); } catch (e) {} const gd = $('guide'); gd.hidden = true; if (first) { void gd.offsetWidth; gd.hidden = false; } }
   }
 
-  let lastText = '';
+  let lastText = '', endCount = 0;
+  const GUIDE_KEY = 'oikoshi-guided';
   function finish() {
     const r = OK.result(g);
     const isNew = !found.has(r.id); found.add(r.id); saveFound();
     if (story) { storyNight(r); return; } // ストーリー中は、その夜のふり返りへ（ランキングには入れない）
-    track('end-' + r.id);
+    if (endCount++ < 3) track('end-' + r.id); // 結末は、1 回開いたうちの最初の 3 回だけ数える（記録を減らす・2026-11-23）
+    $('guide').hidden = true;
     $('r-stars').textContent = (g.mode !== 'normal' ? OK.MODES[g.mode] + '　' : '') + (OK.PASS_ENDS.includes(r.id) ? 'CLEAR!　' : '') + '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
     $('r-new').hidden = !isNew;
     $('r-head').textContent = r.head;
@@ -788,6 +792,10 @@
       else showRank(mode);
     }
     lastText = OK.shareText(r, found.size, location.origin + location.pathname + '?ref=share', g.trace, place, g.mode);
+    // クリアしたときと、はじめて見た結末のときは、シェアボタンを目立たせる（シェアから来る人が 6 割だったので・2026-11-23・本人）
+    { const hot = clear || isNew; $('b-share').classList.toggle('hot', hot);
+      $('r-sharecall').textContent = clear ? (r.id === 'ghost' ? 'ほぼ気づかれずにクリア！自慢しよう' : 'このクリア、自慢しよう！') : isNew ? '新しい結末！みんなにも見せよう' : '';
+      $('r-sharecall').hidden = !hot; }
     makeShot(r); // 最後の場面の画像（シェアにつける）
     $('b-share').href = 'https://x.com/intent/post?text=' + encodeURIComponent(lastText);
     $('o-result').hidden = false;
@@ -874,7 +882,7 @@
 
   // ---- 一時停止（右上の ☰）----
   let paused = false;
-  function pause() { if (!playing || g.end || paused) return; paused = true; $('o-pause').hidden = false; try { bgm.pause(); } catch (e) {} track('pause'); }
+  function pause() { if (!playing || g.end || paused) return; paused = true; $('o-pause').hidden = false; try { bgm.pause(); } catch (e) {} }
   // ブラウザを裏にしたら、虫の音と効果音を止める（遊んでいる途中なら一時停止）。表に戻ったら、鳴っていた音だけ戻す（2026-11-20・本人）
   let bgmWas = false;
   document.addEventListener('visibilitychange', () => {
@@ -1015,7 +1023,7 @@
   $('b-title').onclick = toTitle;
   $('pname').value = getName();
   $('pname').addEventListener('change', () => { if (!saveName($('pname').value)) { nameErr(true); return; } nameErr(false); $('pname').value = getName(); pushName(); });
-  $('b-again').onclick = () => { track('again'); start(); };
+  $('b-again').onclick = () => { start(); };
   // ---- シェアの画像：最後の場面に、結末と最大警戒度を書きこむ（2026-11-20・本人）----
   // スマホ：共有メニューで画像つき（X を選べる）。パソコンなど画像を送れないとき：X の投稿画面を開き、「画像を保存」から手でつける
   let shotFile = null, endSnap = null;
