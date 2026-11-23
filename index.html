@@ -191,6 +191,8 @@
   .tmenu-list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
   .tmenu-list .btn { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; }
   .tmenu-list .btn span { color: var(--lamp); font-size: 13px; white-space: nowrap; }
+  .stream-ok { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 320px; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--line); font-size: 12px; color: var(--sub); line-height: 1.5; } /* 配信OK（2026-11-21・本人） */
+  .stream-ok b { color: var(--ink); font-size: 14px; } .stream-ok em { font-style: normal; color: var(--lamp); font-weight: 700; }
   .ends-sum { font-size: 13px; color: var(--sub); } .ends-sum b { color: var(--lamp); }
   .ends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 340px; font-size: 13px; line-height: 1.45; text-align: left; }
   .ends-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.04); }
@@ -289,6 +291,7 @@
         <button class="btn" id="b-titles">🏅 称号の一覧<span id="b-titles-n">0／19</span></button>
         <button class="btn" id="b-fs3" hidden>⛶ 全画面</button>
       </div>
+      <div class="stream-ok"><b>🎥 実況・配信OK（収益化もOK）</b><span>配信するときは <em>#オイコシタイ</em> をつけてもらえるとうれしいです</span></div>
       <button class="btn small" id="b-tmenuback">もどる</button>
     </div>
     <div class="over" id="o-titles" hidden>
@@ -367,7 +370,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261121155101"></script>
-<script src="game.js?v=20261121155101"></script>
+<script src="logic.js?v=20261123014452"></script>
+<script src="game.js?v=20261123014452"></script>
 </body>
 </html>
