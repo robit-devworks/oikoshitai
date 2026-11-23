@@ -103,9 +103,10 @@
 
   function newGame(seed, opts) {
     let o;
-    const rand = rng(seed == null ? Date.now() : seed);
+    const sd = (seed == null ? Date.now() : seed) >>> 0; // 種（リプレイで同じ夜を作るのに使う）
+    const rand = rng(sd);
     const g0 = {
-      rand, t: 0, sus: 0, maxSus: 0, end: null, endT: 0,
+      rand, seed: sd, t: 0, sus: 0, maxSus: 0, end: null, endT: 0,
       mode: (opts && (opts.mode || (opts.hard && 'hard'))) || 'normal',
       me: { x: 0, gear: 2, z: 0, lane: 0 },
       her: { x: C.START_GAP, z: 0, v: C.HER_V, stopT: 0, nextStop: 6 + rand() * 6, lookT: 0, looks: 0, yield: false },
@@ -123,14 +124,33 @@
     g.rain = !!o.rain;                             // ストーリー：雨（見た目だけ）
     if ((g.hard || g.mode === 'dog') && !o.noCop) { g.cop = 0; g.police = { x: 0, z: C.COP_LANE, on: false, next: o.copFirst != null ? o.copFirst : C.COP_FIRST + (g.mode === 'dog' ? 4 : 0), bellT: 0, watching: false }; }
     if (g.mode === 'dog') g.dog = { x: g.her.x - 4, z: 0.6, tz: 0.6, next: 2, barkT: 0, cd: 0, friendT: 0, friend: false, lastBark: -99 };
+    if (o.rec) g.rec = { n: 0, d: '', i: [] };    // リプレイ用の記録：1 コマの時間（ミリ秒・1 文字ずつ）と操作（何コマ目に何をしたか）
     return g;
   }
+
+  // ---- リプレイ（2026-11-23・本人：ランキング上位の夜を見られるように。公開は 11/28 以降）----
+  // 1 コマの時間をミリ秒にそろえて記録しておくと、種と操作から同じ夜をそのまま作りなおせる
+  const recIn = (g, k, v) => { if (g.rec) g.rec.i.push(g.rec.n + k + v); };
+  function encodeRec(g) { return g.rec ? { v: 1, s: g.seed, m: g.mode, d: g.rec.d, i: g.rec.i.join(',') } : null; }
+  function makeReplay(rec) { // { g, next() }：next() を呼ぶたびに 1 コマ進める（もうコマがなければ false）
+    const g = newGame(rec.s, { mode: rec.m || 'normal' }), d = String(rec.d || ''), ins = {};
+    String(rec.i || '').split(',').forEach((t) => { const m = /^(\d+)([gl])(\d)$/.exec(t); if (m) (ins[m[1]] = ins[m[1]] || []).push([m[2], +m[3]]); });
+    let n = 0;
+    return { g, len: d.length, get n() { return n; }, nextMs() { return n < d.length ? d.charCodeAt(n) - 48 : -1; }, next() {
+      if (n >= d.length) return false;
+      for (const [k, v] of ins[n] || []) { if (k === 'g') setGear(g, v); else setLane(g, v); }
+      step(g, (d.charCodeAt(n) - 48) / 1000); n++; return true;
+    } };
+  }
+  function replayAll(rec) { const r = makeReplay(rec); while (r.next()); return r.g; }
 
   function mySpeed(g) { return C.GEARS[g.me.gear]; }
 
   function setGear(g, gear) {
     if (g.end) return;
-    g.me.gear = Math.max(0, Math.min(4, gear));
+    const v = Math.max(0, Math.min(4, gear));
+    if (v !== g.me.gear) recIn(g, 'g', v);
+    g.me.gear = v;
   }
 
   // その場所・その列をふさいでいるもの
@@ -144,7 +164,7 @@
     lane = Math.max(0, Math.min(2, lane));
     if (lane === g.me.lane) return false;
     if (blockAt(g.me.x, lane, 1)) return false; // 車や電柱があって入れない
-    g.me.lane = lane; g.laneMoves++;
+    g.me.lane = lane; g.laneMoves++; recIn(g, 'l', lane);
     return true;
   }
 
@@ -157,6 +177,7 @@
       if (g.end === 'flee' || g.end === 'konbini' || g.end === 'bump') her.x += 22 * dt;
       return;
     }
+    if (g.rec) { g.rec.d += String.fromCharCode(48 + Math.max(0, Math.min(50, Math.round(dt * 1000)))); g.rec.n++; }
     g.t += dt;
 
     // ---- 自分 ----
@@ -484,5 +505,5 @@
       `▶ 夜道の気まずさゲーム\n${url}\n\n#オイコシタイ #バカゲー #個人開発`;
   }
 
-  return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, skillTable, skillNext, shareText, normName, nameOK };
+  return { C, LANE_NAMES, OBST, ENDINGS, END_BY, PASS_ENDS, MODES, STORY, ROUTES, STORY_LEN, STORY_ENDS, STORY_ORDER, UWASA, uwasa, encodeRec, makeReplay, replayAll, storyRoute, storyChapter, storyEnding, storyShare, MOODS, mood, herThought, rng, newGame, mySpeed, setGear, setLane, blockAt, step, result, skill, skillTable, skillNext, shareText, normName, nameOK };
 });

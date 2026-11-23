@@ -146,6 +146,11 @@
   .res-btns .share-call { grid-column: 1 / -1; margin: 2px 0 -2px; font-size: 13px; font-weight: 700; color: var(--lamp); text-align: center; }
   .btn.x.hot { box-shadow: 0 0 0 3px var(--lamp), 0 0 18px rgba(255, 215, 106, .55); animation: sharePulse 1.6s ease-in-out infinite; }
   @keyframes sharePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  /* リプレイ（2026-11-23・本人） */
+  .rp-bar { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 8px 14px; border-radius: 10px; background: rgba(8, 10, 24, .82); border: 1px solid var(--lamp); color: var(--ink); font-size: 13px; font-weight: 700; }
+  .rp-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rp-bar button { flex-shrink: 0; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+  .rp-btn { margin-left: 6px; width: 30px; height: 26px; border-radius: 7px; border: 1px solid var(--lamp); background: transparent; color: var(--lamp); font-size: 12px; cursor: pointer; flex-shrink: 0; }
   /* 最初の 1 回だけの案内（2026-11-23・本人） */
   .guide { position: absolute; left: 50%; top: 20%; z-index: 3; pointer-events: none; display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 10px 18px; border-radius: 12px; border: 2px solid var(--lamp); background: rgba(8, 10, 24, .85); color: var(--ink); white-space: nowrap; animation: guide 5s ease forwards; }
   .guide b { font-size: 18px; color: var(--lamp); } .guide span { font-size: 12px; color: var(--sub); }
@@ -259,6 +264,7 @@
 
   <div class="stage">
     <canvas id="cv"></canvas>
+    <div class="rp-bar" id="rp-bar" hidden><span id="rp-label"></span><button id="rp-close">✕ とじる</button></div>
     <div class="guide" id="guide" hidden><b>前の人を追いこそう！</b><span>怖がらせないように、そっと</span></div>
     <button class="menu-btn" id="b-menu" aria-label="メニュー（一時停止）">☰</button>
     <button class="menu-btn fs-btn" id="b-fs" aria-label="全画面" hidden>⛶</button>
@@ -382,7 +388,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261123020546"></script>
-<script src="game.js?v=20261123020546"></script>
+<script src="logic.js?v=20261123022639"></script>
+<script src="game.js?v=20261123022639"></script>
 </body>
 </html>

@@ -132,7 +132,7 @@
   }
   const shared = () => !!DB || fbAllowed;
   const fbKey = (max, t) => max * 1000 + Math.max(0, Math.min(999, t)); // 並べる順：警戒度が低いほど・同じなら速いほど上
-  async function fbSubmit(r, mode) {
+  async function fbSubmit(r, mode, rec) {
     const F = await firebaseReady(); if (!F) throw new Error('no firebase');
     const ref = F.db.ref(`oikoshi/best/${mode}/${F.uid}`);
     const old = (await withTimeout(ref.get(), 8000)).val();
@@ -140,6 +140,9 @@
     if (!better && old.n === name) return;
     const d = new Date();
     await withTimeout(ref.set(better ? { n: name, m: r.max, s: t, k, e: String(r.id).slice(0, 16), d: (d.getMonth() + 1) + '/' + d.getDate(), t: F.TS } : Object.assign({}, old, { n: name, t: F.TS })), 8000);
+    if (better && rec && rec.d.length <= 20000) { // 自己ベストの夜の動き（リプレイ用）。ランキングとは別の場所に置く（2026-11-23・本人）
+      await withTimeout(F.db.ref(`oikoshi/replay/${mode}/${F.uid}`).set({ v: 1, s: rec.s, d: rec.d, i: rec.i.slice(0, 8000), k }), 8000).catch(() => {});
+    }
     if (better && (!old || old.m !== r.max)) { // 警戒度ごとの人数（順位を出すのに使う）
       const hist = (b, dd) => withTimeout(F.db.ref(`oikoshi/hist/${mode}/b${b}`).transaction((v) => Math.max(0, (v || 0) + dd)), 8000).catch(() => {});
       await hist(r.max, 1); if (old) await hist(old.m, -1);
@@ -212,8 +215,8 @@
   }
   function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]); }
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  async function submitShared(r, mode) { // 自己ベストなら書く（警戒度が低いほど・同じなら速いほど良い）
-    if (!DB) return fbSubmit(r, mode);
+  async function submitShared(r, mode, rec) { // 自己ベストなら書く（警戒度が低いほど・同じなら速いほど良い）
+    if (!DB) return fbSubmit(r, mode, rec);
     const ref = DB.doc('scores/' + myId);
     const snap = await withTimeout(ref.get(), 10000);
     const cur = (snap.exists && snap.data()) || {};
@@ -235,7 +238,39 @@
     arr.forEach((x, k) => { x.rank = k + 1; x.name = names[x.id]; });
     return { top: arr.slice(0, TOP_N), total: arr.length, mine: i + 1, near: i >= TOP_N ? arr.slice(i - NEAR_N, i + NEAR_N + 1) : [] };
   }
-  const row = (x) => `<li class="${x.id === myId ? 'me' : ''}"><span>${x.rank}位</span><span class="nm">${esc(x.name || NONAME)}${x.id === myId ? '（あなた）' : ''}</span><b>${x.max}%</b><span>${x.t}秒</span></li>`;
+  const row = (x) => `<li class="${x.id === myId ? 'me' : ''}"><span>${x.rank}位</span><span class="nm">${esc(x.name || NONAME)}${x.id === myId ? '（あなた）' : ''}</span><b>${x.max}%</b><span>${x.t}秒</span>${REPLAY_SHOW && fbAllowed && x.rank <= 3 && (rankMode === 'normal' || modeKnown(rankMode)) ? `<button class="rp-btn" data-id="${esc(x.id)}" data-rank="${x.rank}" aria-label="${x.rank}位の夜を見る">▶</button>` : ''}</li>`;
+  // ---- リプレイ：ランキング上位 3 人の夜を見る（2026-11-23・本人）。11/28 より前はボタンを出さない（?replay=1 で試せる）----
+  const REPLAY_SHOW = /[?&]replay=1\b/.test(location.search); // 11/28 以降に公開するときは true にする
+  let rp = null, rpAcc = 0, rpBack = 'o-rank';
+  $('r-rank').addEventListener('click', async (e) => {
+    const b = e.target.closest('.rp-btn'); if (!b) return;
+    const mode = rankMode, li = b.closest('li'), name = li.querySelector('.nm').textContent, max = li.querySelector('b').textContent;
+    b.disabled = true;
+    try {
+      const F = await firebaseReady(); const rec = F && (await withTimeout(F.db.ref(`oikoshi/replay/${mode}/${b.dataset.id}`).get(), 8000)).val();
+      if (!rec || !rec.d) { $('r-rank-note').textContent = 'この記録の夜は残っていません（リプレイができる前の記録です）'; return; }
+      playReplay(Object.assign({ m: mode }, rec), `▶ ${b.dataset.rank}位 ${name} の夜（最大 ${max}）`);
+    } catch (err) { $('r-rank-note').textContent = 'リプレイを読みこめませんでした'; } finally { b.disabled = false; }
+  });
+  function playReplay(rec, label) {
+    rpBack = !$('o-rank').hidden ? 'o-rank' : 'o-result';
+    rp = OK.makeReplay(rec); rpAcc = 0; g = rp.g;
+    seenEv = 0; pops = []; shown = false; myPhase = herPhase = 0; endSnap = null;
+    for (const id of ['o-rank', 'o-result', 'o-title', 'o-pause']) $(id).hidden = true;
+    $('guide').hidden = true; $('rp-label').textContent = label; $('rp-bar').hidden = false;
+    document.body.classList.remove('menu'); paused = false; playing = true; audio(); playBgm(); hud(); track('replay');
+  }
+  function rpAdvance(dt) { // 記録したコマの時間どおりに進める（記録が終わったら、結末の動きだけふつうに進める）
+    if (rp.n >= rp.len) { OK.step(g, dt); return; }
+    rpAcc += dt * 1000;
+    for (let k = 0; k < 30 && rp.n < rp.len && rpAcc >= rp.nextMs(); k++) { rpAcc -= rp.nextMs(); rp.next(); }
+  }
+  function closeReplay() { if (!rp) return; rp = null; $('rp-bar').hidden = true; }
+  function endReplay() {
+    if (!rp) return; closeReplay(); playing = false; paused = false; $('o-pause').hidden = true;
+    document.body.classList.add('menu'); $(rpBack).hidden = false; newDemo();
+  }
+  $('rp-close').addEventListener('click', endReplay);
   async function showRank(mode) {
     const seq = ++rankSeq; rankMode = mode;
     for (const m of ['normal', 'hard', 'dog']) $('t-' + m).classList.toggle('on', m === mode);
@@ -678,9 +713,9 @@
 
   // ---- 進める ----
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
+    const dt = Math.min(50, Math.round(now - last) || 0) / 1000; last = now; // ミリ秒にそろえる（リプレイで同じ夜を作りなおせるように・2026-11-23）
     if (playing && !paused) {
-      OK.step(g, dt);
+      if (rp) rpAdvance(dt); else OK.step(g, dt);
       const fleeNow = g.events.slice(seenEv).some((e) => e.kind === 'end' && (e.id === 'flee' || e.id === 'konbini')); // 同時に逃げられたら、ダッシュの音だけ（2026-11-19・本人）
       for (; seenEv < g.events.length; seenEv++) {
         const e = g.events[seenEv];
@@ -700,7 +735,7 @@
         shown = true;
         const e = OK.END_BY[g.end];
         if (e.stars >= 3) SE.rare(); else if (OK.PASS_ENDS.includes(g.end)) SE.pass(); else if (g.end === 'same') SE.same();
-        setTimeout(finish, 1600);
+        setTimeout(rp ? endReplay : finish, 1600);
       }
     }
     // タイトル画面の後ろ：自動で歩くデモ（上手な遊び方で回りこんで追いこす。終わったらくりかえす）
@@ -743,12 +778,12 @@
 
   function start(force) { // force：モードを決めて始める（宣伝動画を作るときだけ。'normal'・'hard'・'dog'）
     force = typeof force === 'string' ? force : null;
-    endSnap = null;
+    endSnap = null; closeReplay();
     pushName();
     document.body.classList.remove('menu'); paused = false; $('o-pause').hidden = true; $('o-rank').hidden = true;
     audio(); playBgm();
     const sc = story && OK.storyChapter(story.ch, story.route); // ストーリー中は、その話のモード
-    g = sc ? OK.newGame(null, Object.assign({ mode: sc.mode }, sc.opts)) : OK.newGame(null, { mode: force || (dogMode ? 'dog' : hardMode ? 'hard' : 'normal') }); seenEv = 0;
+    g = sc ? OK.newGame(null, Object.assign({ mode: sc.mode }, sc.opts)) : OK.newGame(null, { mode: force || (dogMode ? 'dog' : hardMode ? 'hard' : 'normal'), rec: true }); seenEv = 0;
     $('o-story').hidden = true; pops = []; shown = false; myPhase = herPhase = 0;
     $('o-title').hidden = true; $('o-result').hidden = true;
     playing = true; hud(); // start・again・pause は数えない（結末の数で分かる。GoatCounter の記録を減らす・2026-11-23・本人）
@@ -792,7 +827,7 @@
       $('r-rank-head').textContent = place === 1 ? '自己ベスト更新！' : place ? `ランキング ${place} 位に入った！` : 'ランキング（この端末）';
       lastPlace = { mode: g.mode, now: place ? rank[place - 1].now : 0 };
       const mode = g.mode;
-      if (shared()) submitShared(r, mode).catch(() => {}).then(() => showRank(mode)); // みんなのランキングに記録してから並べる
+      if (shared()) submitShared(r, mode, OK.encodeRec(g)).catch(() => {}).then(() => showRank(mode)); // みんなのランキングに記録してから並べる
       else showRank(mode);
     }
     lastText = OK.shareText(r, found.size, location.origin + location.pathname + '?ref=share', g.trace, place, g.mode);
@@ -886,7 +921,7 @@
 
   // ---- 一時停止（右上の ☰）----
   let paused = false;
-  function pause() { if (!playing || g.end || paused) return; paused = true; $('o-pause').hidden = false; try { bgm.pause(); } catch (e) {} }
+  function pause() { if (rp) { endReplay(); return; } if (!playing || g.end || paused) return; paused = true; $('o-pause').hidden = false; try { bgm.pause(); } catch (e) {} }
   // ブラウザを裏にしたら、虫の音と効果音を止める（遊んでいる途中なら一時停止）。表に戻ったら、鳴っていた音だけ戻す（2026-11-20・本人）
   let bgmWas = false;
   document.addEventListener('visibilitychange', () => {
@@ -998,13 +1033,14 @@
   $('b-rankback').onclick = () => { rankHome.insertBefore(rankBox, rankNext); $('o-rank').hidden = true; $('o-title').hidden = false; };
 
   // ---- 操作 ----
-  const tap = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); if (playing && !g.end && !paused) { fn(); hud(); } });
+  const tap = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); if (playing && !g.end && !paused && !rp) { fn(); hud(); } });
   tap('b-slow', () => OK.setGear(g, g.me.gear - 1));
   tap('b-fast', () => OK.setGear(g, g.me.gear + 1));
   tap('b-up', () => OK.setLane(g, g.me.lane - 1));
   tap('b-down', () => OK.setLane(g, g.me.lane + 1));
   window.addEventListener('keydown', (e) => {
     if (e.target && e.target.tagName === 'INPUT') { if (e.key === 'Enter') { e.target.blur(); } return; } // 名前を打っているとき
+    if (rp) { if (e.key === 'Escape') endReplay(); return; } // リプレイ中は見るだけ
     if (e.key === 'Escape' && playing && !g.end) { paused ? resume() : pause(); return; }
     if (!playing || g.end) { if ((e.key === 'Enter' || e.key === ' ') && !playing && !$('o-title').hidden) startFromTitle(); return; }
     if (paused) return;
@@ -1069,5 +1105,5 @@
   resetLogo();
   resize(); hud();
   requestAnimationFrame((t) => { last = t; frame(t); });
-  window.__OK = { get g() { return g; }, start, steps }; // テスト用
+  window.__OK = { get g() { return g; }, start, steps, playReplay, get rp() { return rp; } }; // テスト用
 })();
