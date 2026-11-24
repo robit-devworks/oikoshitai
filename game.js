@@ -789,12 +789,13 @@
     g = sc ? OK.newGame(null, Object.assign({ mode: sc.mode }, sc.opts)) : OK.newGame(null, { mode: force || (dogMode ? 'dog' : hardMode ? 'hard' : 'normal'), rec: true }); seenEv = 0;
     $('o-story').hidden = true; pops = []; shown = false; myPhase = herPhase = 0;
     $('o-title').hidden = true; $('o-result').hidden = true;
-    playing = true; hud(); // start・again・pause は数えない（結末の数で分かる。GoatCounter の記録を減らす・2026-11-23・本人）
+    playing = true; hud(); // again・pause は数えない（結末の数で分かる。GoatCounter の記録を減らす・2026-11-23・本人）
+    if (!startCounted) { startCounted = true; track('start'); } // start は 1 回開いたうちの最初の 1 回だけ数える（遊びはじめた人の割合が分かるように・2026-11-24・本人）
     // 最初の 1 回だけ「前の人を追いこそう！」（同じマンションで終わる人が多かったので・2026-11-23・本人）
     { let first = false; try { first = !story && !localStorage.getItem(GUIDE_KEY); if (first) localStorage.setItem(GUIDE_KEY, '1'); } catch (e) {} const gd = $('guide'); gd.hidden = true; if (first) { void gd.offsetWidth; gd.hidden = false; } }
   }
 
-  let lastText = '', endCount = 0;
+  let lastText = '', endCount = 0, startCounted = false;
   const GUIDE_KEY = 'oikoshi-guided', PLAYS_KEY = 'oikoshi-plays';
   // ---- アンケート（2026-11-24・本人：追加してほしい機能や、理不尽に感じるところを聞きたい）----
   // ① ワンタップ：遊んだ回数 2〜9 回の人に 1 回だけ（GoatCounter で数える）
