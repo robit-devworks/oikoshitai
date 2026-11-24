@@ -137,9 +137,12 @@
     const ref = F.db.ref(`oikoshi/best/${mode}/${F.uid}`);
     const old = (await withTimeout(ref.get(), 8000)).val();
     const t = Math.max(0, Math.min(999, r.t)), k = fbKey(r.max, t), better = !old || k < old.k, name = getName() || NONAME;
-    if (!better && old.n === name) return;
+    // 遊んだ回数（この端末で 11/23 からあとに遊んだ回数・全モード）も一緒に送る。自己ベストでなくても 10 回ごとに送りなおす（2026-11-24・本人：上位の人が何回遊んだか知りたい）
+    let p = 0; try { p = Math.max(0, Math.min(1e7, Math.floor(+localStorage.getItem(PLAYS_KEY) || 0))); } catch (e) {}
+    const playsDue = old && p - (+old.p || 0) >= 10;
+    if (!better && old.n === name && !playsDue) return;
     const d = new Date();
-    await withTimeout(ref.set(better ? { n: name, m: r.max, s: t, k, e: String(r.id).slice(0, 16), d: (d.getMonth() + 1) + '/' + d.getDate(), t: F.TS } : Object.assign({}, old, { n: name, t: F.TS })), 8000);
+    await withTimeout(ref.set(better ? { n: name, m: r.max, s: t, k, e: String(r.id).slice(0, 16), d: (d.getMonth() + 1) + '/' + d.getDate(), p, t: F.TS } : Object.assign({}, old, { n: name, p, t: F.TS })), 8000);
     if (better && rec && rec.d.length <= 20000) { // 自己ベストの夜の動き（リプレイ用）。ランキングとは別の場所に置く（2026-11-23・本人）
       await withTimeout(F.db.ref(`oikoshi/replay/${mode}/${F.uid}`).set({ v: 1, s: rec.s, d: rec.d, i: rec.i.slice(0, 8000), k }), 8000).catch(() => {});
     }
@@ -812,6 +815,9 @@
       if (loud) $('r-title').after(u); else $('b-title').after(u); }
     $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); // 犬の散歩でなつかずに終わったら、なつかせ方のヒント
     if (!$('r-hint').hidden) $('r-hint').textContent = 'ヒント：' + ['犬は、となりの列からそっと近づくと…？', '犬に好かれる人に、悪い人はいない', 'おまわりさんが近くにいると、安心'][Math.floor(Math.random() * 3)]; // 3 つのどれか（2026-11-20・本人）
+    // 「同じマンションだった」（追いこさずに家に着いた）ときは、追いこすゲームだと伝える（案内だけでは減らなかったので・2026-11-24・本人）
+    $('r-hint').classList.toggle('same-hint', r.id === 'same');
+    if (r.id === 'same') { $('r-hint').hidden = false; $('r-hint').textContent = 'ヒント：追いこさないと、家まで一緒……。「はやく」と ▲▼ で回りこんで、前に出よう'; }
     { const clr = OK.PASS_ENDS.includes(r.id), sk = OK.skill(g.mode, r.max, r.friend); // 腕前ランク（クリアしたときだけ）
       $('r-skill').hidden = !clr; $('r-skill').className = 'skill r-' + sk.rank;
       $('r-sk-rank').textContent = sk.rank; $('r-sk-name').textContent = sk.name;
