@@ -152,6 +152,19 @@
   .rp-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rp-bar button { flex-shrink: 0; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
   .rp-btn { margin-left: 6px; width: 30px; height: 26px; border-radius: 7px; border: 1px solid var(--lamp); background: transparent; color: var(--lamp); font-size: 12px; cursor: pointer; flex-shrink: 0; }
+  /* アンケート（2026-11-24・本人） */
+  .qpoll { width: 100%; max-width: 340px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
+  .qpoll p { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--ink); }
+  .qpoll div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .qpoll button { padding: 8px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 13px; cursor: pointer; }
+  .qpoll .qp-thanks { margin: 0; color: var(--lamp); }
+  .sv-ask { color: var(--lamp) !important; }
+  #o-survey { z-index: 6; background: rgba(5, 7, 18, .97); justify-content: flex-start; }
+  #o-survey::before { margin-top: 0; }
+  .sv-lead { max-width: 340px; font-size: 13px; color: var(--sub); line-height: 1.6; margin: 0; } .sv-lead small { color: var(--sub); opacity: .8; }
+  .sv-q { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 13px; font-weight: 700; color: var(--ink); }
+  .sv-q textarea { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); font-size: 16px; resize: vertical; }
+  .sv-msg { min-height: 1.2em; font-size: 13px; color: var(--lamp); margin: 0; max-width: 340px; }
   /* 最初の 1 回だけの案内（2026-11-23・本人） */
   .guide { position: absolute; left: 50%; top: 20%; z-index: 3; pointer-events: none; display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 10px 18px; border-radius: 12px; border: 2px solid var(--lamp); background: rgba(8, 10, 24, .85); color: var(--ink); white-space: nowrap; animation: guide 5s ease forwards; }
   .guide b { font-size: 18px; color: var(--lamp); } .guide span { font-size: 12px; color: var(--sub); }
@@ -318,6 +331,17 @@
       <ol class="ends-list" id="titles-list"></ol>
       <button class="btn small" id="b-titlesback">もどる</button>
     </div>
+    <!-- アンケート（2026-11-24・本人） -->
+    <div class="over" id="o-survey" hidden>
+      <div class="head">📝 アンケート</div>
+      <p class="sv-lead">どれか 1 つだけでも OK です。答えてくれた人には、限定の称号「夜道の相談役」をプレゼント。<br><small>名前や住所など、個人の情報は書かないでね</small></p>
+      <label class="sv-q">👍 好きなところ・おもしろいところ<textarea id="sv-g" maxlength="300" rows="3"></textarea></label>
+      <label class="sv-q">😤 理不尽に感じるところ・むずかしいところ<textarea id="sv-b" maxlength="300" rows="3"></textarea></label>
+      <label class="sv-q">💡 追加してほしい機能・こうなったらいいな<textarea id="sv-w" maxlength="300" rows="3"></textarea></label>
+      <p class="sv-msg" id="sv-msg"></p>
+      <button class="btn main" id="sv-send">送る</button>
+      <button class="link-btn" id="sv-close">とじる</button>
+    </div>
     <div class="over" id="o-a2hs" hidden>
       <div class="head">全画面で遊ぶには</div>
       <p>この画面（iPhone など）では全画面のボタンが使えません。<br><b>ホーム画面に追加</b>すると、ブラウザのバーなしで遊べます。</p>
@@ -362,6 +386,7 @@
         <div id="r-near"></div>
         <div class="rank-note" id="r-rank-note">警戒度が低いほど上（この端末の記録）</div>
       </div>
+      <div class="qpoll" id="r-qpoll" hidden><p>🗳 オイコシタイ、どうだった？</p><div><button data-a="😆 おもしろい">😆 おもしろい</button><button data-a="😤 理不尽">😤 理不尽</button><button data-a="🤔 遊び方が分からない">🤔 遊び方が分からない</button><button data-a="🕹 操作しにくい">🕹 操作しにくい</button><button data-a="😴 あきた">😴 あきた</button></div></div>
       <div class="res-btns">
         <p class="share-call" id="r-sharecall" hidden></p>
         <a class="btn x" id="b-share" href="https://x.com/" target="_blank" rel="noopener">𝕏 で気まずさを共有</a>
@@ -369,6 +394,7 @@
         <button class="btn main span2" id="b-again">もう一回</button>
       </div>
       <button class="link-btn" id="b-title">タイトルへ</button>
+      <button class="link-btn sv-ask" id="r-svask" hidden>📝 アンケートに答えて、限定の称号をもらう</button>
       <p class="hint uwasa" id="r-uwasa" hidden></p>
       <p class="author" data-where="result"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://youtu.be/DOE8YIUp59M" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
     </div>
@@ -389,7 +415,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261124011130"></script>
-<script src="game.js?v=20261124011130"></script>
+<script src="logic.js?v=20261124013522"></script>
+<script src="game.js?v=20261124013522"></script>
 </body>
 </html>

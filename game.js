@@ -126,7 +126,7 @@
       const prev = await new Promise((res) => { const off = auth.onAuthStateChanged((u) => { off(); res(u); }); });
       const user = prev || (await auth.signInAnonymously()).user;
       myId = user.uid;
-      return { db: app.database(), uid: user.uid, TS: fb.database.ServerValue.TIMESTAMP };
+      return { db: app.database(), uid: user.uid, TS: fb.database.ServerValue.TIMESTAMP, INC: (n) => fb.database.ServerValue.increment(n) };
     })(), 12000).catch((e) => { fbWait = null; throw e; });
     return fbWait.then(fbTouch);
   }
@@ -796,9 +796,73 @@
 
   let lastText = '', endCount = 0;
   const GUIDE_KEY = 'oikoshi-guided', PLAYS_KEY = 'oikoshi-plays';
+  // ---- アンケート（2026-11-24・本人：追加してほしい機能や、理不尽に感じるところを聞きたい）----
+  // ① ワンタップ：遊んだ回数 2〜9 回の人に 1 回だけ（GoatCounter で数える）
+  // ② 文で答える：3 回遊んだ人なら誰でも（結果画面のボタンから）。Firebase の oikoshi/survey/{uid} に保存（本人は書くだけ）。答えた人には称号「夜道の相談役」
+  const QPOLL_KEY = 'oikoshi-qpoll', SV_KEY = 'oikoshi-survey', SV_TITLE = '夜道の相談役', SV_MIN = 3; // 文で答えるのは 3 回遊んでから（2026-11-24・本人）
+  let pollN = 0, svShown = false;
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  function showPolls(n) {
+    pollN = n;
+    const q = $('r-qpoll'), qOn = fbAllowed && !lsGet(QPOLL_KEY) && n >= 2 && n <= 9;
+    q.hidden = !qOn;
+    if (qOn && !q.dataset.shown) { q.dataset.shown = '1'; track('アンケート：どうだった：出した（' + n + '回目）'); }
+    const a = $('r-svask'), aOn = fbAllowed && !lsGet(SV_KEY) && n >= SV_MIN;
+    a.hidden = !aOn;
+    if (aOn && !svShown) { svShown = true; track('アンケート：答える：出した'); }
+  }
+  $('r-qpoll').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    track('アンケート：どうだった：' + b.dataset.a + '（' + pollN + '回目）');
+    try { localStorage.setItem(QPOLL_KEY, b.dataset.a); } catch (err) {}
+    $('r-qpoll').innerHTML = '<p class="qp-thanks">🙏 ありがとう！</p>';
+  });
+  $('r-svask').addEventListener('click', () => { $('sv-msg').textContent = ''; $('o-survey').hidden = false; $('o-survey').scrollTop = 0; track('アンケート：答える：開いた'); });
+  $('sv-close').addEventListener('click', () => { $('o-survey').hidden = true; });
+  $('sv-send').addEventListener('click', async () => {
+    const val = (id) => $(id).value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 300);
+    const g = val('sv-g'), b = val('sv-b'), w = val('sv-w');
+    if (!g && !b && !w) { $('sv-msg').textContent = 'どれか 1 つだけでも書いてね'; return; }
+    const btn = $('sv-send'); btn.disabled = true; $('sv-msg').textContent = '送っています…';
+    try {
+      const F = await firebaseReady(); if (!F) throw new Error('no firebase');
+      const best = loadRank('normal')[0];
+      await withTimeout(F.db.ref(`oikoshi/survey/${F.uid}`).set({ g, b, w, n: getName() || NONAME, s: best ? best.max : 100, p: Math.max(1, Math.min(99999, pollN || 1)), v: '2026-11-24', t: F.TS }), 8000);
+      try { localStorage.setItem(SV_KEY, new Date().toISOString().slice(0, 10)); } catch (err) {}
+      track('アンケート：答える：送った');
+      $('sv-msg').innerHTML = `🙏 ありがとう！ 称号「<b>${SV_TITLE}</b>」をもらいました（☰ の称号の一覧で見られます）`;
+      $('r-svask').hidden = true; setTimeout(() => { $('o-survey').hidden = true; }, 2200);
+    } catch (err) { $('sv-msg').textContent = '送れませんでした。もう一度押してね'; } finally { btn.disabled = false; }
+  });
+
+  // ---- 全体の遊んだ回数（2026-11-24・本人：総プレイ回数を知りたい）：端末でためて、5 回ごとに Firebase のモードごとの合計に足す ----
+  const PEND_KEY = 'oikoshi-plays-pend';
+  const loadPend = () => { try { return JSON.parse(localStorage.getItem(PEND_KEY) || '{}') || {}; } catch (e) { return {}; } };
+  const savePend = (p) => { try { localStorage.setItem(PEND_KEY, JSON.stringify(p)); } catch (e) {} };
+  let flushing = false;
+  function countPlay(mode) {
+    if (!fbAllowed) return;
+    const p = loadPend(); p[mode] = (p[mode] || 0) + 1; savePend(p);
+    if (Object.values(p).reduce((a, n) => a + n, 0) >= 5) flushPlays();
+  }
+  async function flushPlays() {
+    if (!fbAllowed || flushing) return;
+    const p = loadPend(); if (!Object.values(p).some((n) => n > 0)) return;
+    flushing = true;
+    try {
+      const F = await firebaseReady(); if (!F) return;
+      for (const [mode, n] of Object.entries(p)) {
+        if (!/^(normal|hard|dog|story)$/.test(mode) || !(n > 0)) continue;
+        const k = Math.min(50, Math.floor(n));
+        await withTimeout(F.db.ref(`oikoshi/plays/${mode}`).set(F.INC(k)), 8000);
+        const q = loadPend(); q[mode] = Math.max(0, (q[mode] || 0) - k); savePend(q); // 送れた分だけ減らす
+      }
+    } catch (e) {} finally { flushing = false; }
+  }
   function finish() {
     const r = OK.result(g);
     const isNew = !found.has(r.id); found.add(r.id); saveFound();
+    countPlay(story ? 'story' : g.mode);
     if (story) { storyNight(r); return; } // ストーリー中は、その夜のふり返りへ（ランキングには入れない）
     if (endCount++ < 3) track('end-' + r.id); // 結末は、1 回開いたうちの最初の 3 回だけ数える（記録を減らす・2026-11-23）
     $('guide').hidden = true;
@@ -811,6 +875,7 @@
     { const u = $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); const t = u ? OK.uwasa(secrets, Math.random()) : ''; $('r-uwasa').textContent = t; $('r-uwasa').hidden = !t; } // 犬のヒントがないときは、うわさ
     // 3 回遊んだら、うわさを上（称号の下）に目立たせて出す（隠しモードに気づく人が少なかったので・2026-11-23・本人）
     { let n = 0; try { n = (+localStorage.getItem(PLAYS_KEY) || 0) + 1; localStorage.setItem(PLAYS_KEY, String(n)); } catch (e) {}
+      showPolls(n);
       const u = $('r-uwasa'), loud = n >= 3; u.classList.toggle('loud', loud);
       if (loud) $('r-title').after(u); else $('b-title').after(u); }
     $('r-hint').hidden = !(g.mode === 'dog' && g.dog && !g.dog.friend); // 犬の散歩でなつかずに終わったら、なつかせ方のヒント
@@ -930,6 +995,7 @@
   function pause() { if (rp) { endReplay(); return; } if (!playing || g.end || paused) return; paused = true; $('o-pause').hidden = false; try { bgm.pause(); } catch (e) {} }
   // ブラウザを裏にしたら、虫の音と効果音を止める（遊んでいる途中なら一時停止）。表に戻ったら、鳴っていた音だけ戻す（2026-11-20・本人）
   let bgmWas = false;
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flushPlays(); }); // 閉じるときに、たまっている回数を送る
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       bgmWas = !bgm.paused;
@@ -1029,7 +1095,8 @@
     $('titles-n').textContent = got; $('titles-total').textContent = OK.ENDINGS.length;
     $('titles-list').innerHTML = OK.ENDINGS.map((e, i) => found.has(e.id)
       ? `<li class="got"><b>${String(i + 1).padStart(2, '0')}</b><span><span class="t">${esc(e.title)}</span><small class="s">${esc(e.head)}　${'★'.repeat(e.stars)}${'☆'.repeat(3 - e.stars)}</small></span></li>`
-      : `<li><b>${String(i + 1).padStart(2, '0')}</b><span><span class="t">？？？</span></span></li>`).join('');
+      : `<li><b>${String(i + 1).padStart(2, '0')}</b><span><span class="t">？？？</span></span></li>`).join('')
+      + (lsGet(SV_KEY) ? `<li class="got"><b>🎖</b><span><span class="t">${SV_TITLE}</span><small class="s">アンケートに答えてくれた人だけの称号</small></span></li>` : '');
     $('o-tmenu').hidden = true; $('o-titles').hidden = false; $('o-titles').scrollTop = 0; track('titles-from-menu');
   }
   $('b-titles').onclick = showTitles;
