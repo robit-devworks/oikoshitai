@@ -126,6 +126,12 @@
   .author { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 12px; font-size: 12px; }
   .author a { color: var(--sub); text-decoration: none; padding: 4px 2px; white-space: nowrap; }
   .author a:hover { color: var(--ink); }
+  /* ほかのゲーム（2026-11-24・本人） */
+  .other-games { width: 100%; max-width: 320px; flex-direction: column; align-items: stretch; gap: 8px; }
+  .other-games span { font-size: 13px; font-weight: 700; color: var(--ink); text-align: center; }
+  .other-games a { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; font-weight: 700; }
+  .other-games a small { font-size: 12px; font-weight: 400; color: var(--sub); }
+  .other-line span { color: var(--sub); padding: 4px 0; }
   .link-btn { appearance: none; background: none; border: 0; color: var(--sub); font: inherit; font-size: 13px; text-decoration: underline; padding: 6px 10px; cursor: pointer; }
   /* 隠し要素：タイトルがそわそわ → つつくと右へ逃げる */
   .logo .main { transition: transform .12s; touch-action: manipulation; }
@@ -322,6 +328,8 @@
         <button class="btn" id="b-titles">🏅 称号の一覧<span id="b-titles-n">0／19</span></button>
         <button class="btn" id="b-fs3" hidden>⛶ 全画面</button>
       </div>
+      <!-- ROBIT のほかのゲーム（2026-11-24・本人） -->
+      <p class="author other-games" data-where="menu"><span>🎮 ROBIT のほかのゲーム</span><a href="https://robit-devworks.github.io/suwaritai/?ref=oikoshitai" target="_blank" rel="noopener" data-t="game-suwaritai">🚃 スワリタイ！<small>電車で座りたい</small></a><a href="https://robit-devworks.github.io/destroy-go-play/?ref=oikoshitai" target="_blank" rel="noopener" data-t="game-destroygo">⚫ デストロイ碁<small>爽快囲碁バトル！</small></a></p>
       <div class="stream-ok"><b>🎥 実況・配信OK（収益化もOK）</b><span>配信するときは <em>#オイコシタイ</em> をつけてもらえるとうれしいです</span></div>
       <button class="btn small" id="b-tmenuback">もどる</button>
     </div>
@@ -396,6 +404,7 @@
       <button class="link-btn" id="b-title">タイトルへ</button>
       <button class="link-btn sv-ask" id="r-svask" hidden>📝 アンケートに答えて、限定の称号をもらう</button>
       <p class="hint uwasa" id="r-uwasa" hidden></p>
+      <p class="author other-line" data-where="result"><span>ほかのゲーム：</span><a href="https://robit-devworks.github.io/suwaritai/?ref=oikoshitai" target="_blank" rel="noopener" data-t="game-suwaritai">🚃 スワリタイ！</a><a href="https://robit-devworks.github.io/destroy-go-play/?ref=oikoshitai" target="_blank" rel="noopener" data-t="game-destroygo">⚫ デストロイ碁</a></p>
       <p class="author" data-where="result"><a href="https://x.com/intent/follow?screen_name=ROBITdesuyo" target="_blank" rel="noopener" data-t="author-x">𝕏 作者</a><a href="https://www.youtube.com/@futarigurashi_games?sub_confirmation=1" target="_blank" rel="noopener" data-t="author-youtube">▶ 作者の YouTube</a><a class="jikkyo" href="https://youtu.be/DOE8YIUp59M" target="_blank" rel="noopener" data-t="author-jikkyo">🎬 作者の実況</a></p>
     </div>
   </div>
@@ -415,7 +424,7 @@
   </div>
   <p class="keys">キーボード：← → 速さ／↑ ↓ 奥・手前／Esc 一時停止</p>
 </div>
-<script src="logic.js?v=20261124013522"></script>
-<script src="game.js?v=20261124013522"></script>
+<script src="logic.js?v=20261124014810"></script>
+<script src="game.js?v=20261124014810"></script>
 </body>
 </html>
